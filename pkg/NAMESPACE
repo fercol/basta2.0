@@ -1,0 +1,63 @@
+# Export user functions
+export("basta", "basta.default", "print.basta", "summary.basta", 
+       "DataCheck", "MakeCovMat", "MakeLifeTable", "CensusToCaptHist",
+       "multibasta", "summary.multibasta", "print.multibasta")
+
+# Import package snowfall
+ import(snowfall)
+  importFrom("grDevices", "adjustcolor", "rainbow")
+  importFrom("graphics", "axis", "layout", "legend", "lines", "mtext",
+             "par", "plot", "polygon")
+  importFrom("stats", "as.formula", "cor", "density", "dnorm",
+             "model.matrix", "pnorm", "qnorm", "quantile", "rbeta",
+             "rnorm", "runif", "sd", "terms", "var")
+  importFrom("utils", "packageDescription")
+
+# S3 methods for exported functions:
+S3method("print", "basta")
+S3method("summary", "basta")
+S3method("plot", "basta")
+S3method("print", "multibasta")
+S3method("summary", "multibasta")
+S3method("basta", "default")
+
+# S3 methods for hidden functions:
+S3method(".CalcLike", "minAge")
+S3method(".CalcLike", "noMinAge")
+S3method(".CalcParCovObj", "fused")
+S3method(".CalcParCovObj", "inMort")
+S3method(".CalcParCovObj", "noCov")
+S3method(".CalcParCovObj", "propHaz")
+S3method(".BuildParCovObj", "fused")
+S3method(".BuildParCovObj", "inMort")
+S3method(".BuildParCovObj", "noCov")
+S3method(".BuildParCovObj", "propHaz")
+S3method(".CalcPdf", "fusedParCov")
+S3method(".CalcPdf", "inMortParCov")
+S3method(".CalcPdf", "noParCov")
+S3method(".CalcPdf", "propHazParCov")
+S3method(".CalcPostLambda", "lambda")
+S3method(".CalcPostLambda", "noLambda")
+S3method(".CalcPostMortPars", "theGam")
+S3method(".CalcPostMortPars", "theta")
+S3method(".CalcPostPi", "noPi")
+S3method(".CalcPostPi", "pi")
+S3method(".CalcPriorAgeDist", "noCov")
+S3method(".CalcPriorAgeDist", "fused")
+S3method(".CalcPriorAgeDist", "inMort")
+S3method(".CalcPriorAgeDist", "propHaz")
+S3method(".ExtractAgesForPad", "minAge")
+S3method(".ExtractAgesForPad", "noMinAge")
+S3method(".CalcTruSurv", "fusedParCov")
+S3method(".CalcTruSurv", "inMortParCov")
+S3method(".CalcTruSurv", "noParCov")
+S3method(".CalcTruSurv", "propHazParCov")
+S3method(".ProposeLambda", "lambda")
+S3method(".ProposeLambda", "noLambda")
+S3method(".ProposeMortPars", "theGam")
+S3method(".ProposeMortPars", "theta")
+S3method(".SampleAges", "minAge")
+S3method(".SampleAges", "noMinAge")
+S3method(".SamplePiPars", "noPi")
+S3method(".SamplePiPars", "pi")
+
