@@ -30,13 +30,575 @@
 
 # A.1) Data check function:
 # ------------------------- #
+# Data check function:
+DataCheck <- function(object, dataType = "CMR", studyStart = NULL, 
+                      studyEnd = NULL, silent = TRUE) {
+  if (dataType == "CMR") {
+    # Extract study duration:
+    Ti <- studyStart
+    Tf <- studyEnd
+    st <- Ti:Tf
+    nt <- length(st)
+    
+    # Individual IDs:
+    idnames <- object[, 1]
+    
+    # Number of records:
+    n <- nrow(object)
+    
+    # Birth and death:
+    bd <- as.matrix(object[, 2:3])
+    
+    # Recapture matrix:
+    Y <- as.matrix(object[, 1:nt + 3]); colnames(Y) <- st
+    Y1 <- Y
+    Y1[which(Y > 1)] <- 1
+    Tm <- matrix(st, n, nt, byrow = TRUE)
+    
+    # Covariates:
+    if(ncol(object) > nt + 3){
+      Z <- as.matrix(object[, (nt + 4):ncol(object)])
+    } else {
+      Z <- matrix(1, n, 1)
+    }
+    
+    # 1. Death before observations start
+    type1 <- as.vector(which(bd[, 2] < Ti & bd[, 2] != 0 & !is.na(bd[, 2])))
+    if (length(type1) != 0 & !silent) {
+      cat("The following rows deaths occur before observations start:\n")
+      print(type1)
+    }
+    
+    # 2. No birth/death AND no obervations
+    type2 <- as.vector(which(rowSums(bd) + rowSums(Y1) == 0))
+    if (length(type2) != 0 & !silent) {
+      cat("The following rows have no object (unknown birth, unknown death, and no observations):\n")
+      print(type2)
+    }
+    
+    # 3. Birth after death 
+    type3 <- as.vector(which(bd[, 1] > bd[, 2] & bd[, 1] != 0 & 
+                               !is.na(bd[, 1]) & bd[, 2] != 0 & 
+                               !is.na(bd[, 2])))
+    if (length(type3) != 0 & !silent) {
+      cat("The following rows have birth dates that are later than their death dates:\n")
+      print(type3)
+    }
+    
+    # 4. Observations after death
+    # Calculate first and last time observed: 
+    st <- Ti:Tf
+    ytemp <- t(t(Y1) * st)
+    lastObs <- c(apply(ytemp, 1, max))
+    tempDeath <- bd[, 2]
+    tempDeath[which(tempDeath == 0)] <- Inf
+    type4 <- as.vector(which(lastObs > tempDeath & tempDeath >= Ti))
+    rm(tempDeath)
+    
+    if (length(type4) != 0 & !silent) {
+      cat("The following rows have observations that occur after the year of death:\n")
+      print(type4)
+    }
+    
+    # 5. Observations before birth
+    ytemp[ytemp == 0]<- Inf
+    firstObs <- c(apply(ytemp, 1, min))
+    type5 <- as.vector(which(firstObs < bd[, 1]))
+    
+    if (length(type5) != 0 & !silent) {
+      cat("The following rows have observations that occur before the year of birth:\n")
+      print(type5)
+    }
+    
+    # 6. Year of birth should be a zero in recapture matrix Y
+    idb <- which(bd[, 1] > 0 & !is.na(bd[, 1]) & bd[, 1] >= Ti & bd[, 1] <= Tf)
+    bcol <- bd[idb, 1] - Ti
+    bpos <- bcol * n + idb
+    type6 <- as.vector(idb[which(Y[bpos] == 1)])
+    
+    if (length(type6) != 0 & !silent) {
+      cat("The following rows have a one in the recapture matrix in the birth year:\n")
+      print(type6)
+    }
+    
+    n <- nrow(Y)   
+    
+    # All OK:
+    if(length(c(type1, type2, type3, type4, type5, type6)) > 0) {
+      stopExec <- TRUE
+    } else {
+      stopExec <- FALSE
+    }
+    if (!silent) {
+      if (stopExec) {
+        cat("Problems were detected with the data\nYou can use function FixCMRdata() to resolve issues.\n\n")
+      } else {
+        cat("No problems were detected with the data.\n\n")
+      }
+    }
+    
+    # Summary information:
+    firstBirth <- NA
+    lastBirth <- NA
+    idb <- which(bd[, 1] > 0)
+    if (length(idb) > 0) {
+      firstBirth <- min(bd[idb, 1])
+      lastBirth <- max(bd[idb, 1])
+    }
+    
+    firstDeath <- NA
+    lastDeath <- NA
+    idd <- which(bd[, 2] > 0)
+    if (length(idd) > 0) {
+      firstDeath <- min(bd[idd, 2])
+      lastDeath <- max(bd[idd, 2])
+    }
+    datSumm <- list(n = n, 
+                    knownBirth = length(which(bd[, 1] > 0)),
+                    knownDeath = length(which(bd[, 2] > 0)),
+                    knownBD = length(which(bd[, 2] > 0 & bd[, 1] > 0)),
+                    detects = sum(Y1), firstDetec = min(ytemp), 
+                    lastDetec = max(ytemp[which(ytemp != Inf)]),
+                    firstBirth = firstBirth,
+                    lastBirth = lastBirth,
+                    firstDeath = firstDeath,
+                    lastDeath = lastDeath)
+    
+    if (ncol(object) > nt + 3) {
+      newData <- data.frame(idnames, bd, Y, Z)
+    } else {
+      newData <- data.frame(idnames, bd, Y)
+    }
+    probDescr <- c(type1 = "Death < Entry", type2 = "No obs.", 
+                   type3 = "Birth > Death", type4 = "Death < Depart",
+                   type5 = "Birth > Entry", type6 = "Birth = 1 in Y")
+    prbList <- list(newData = newData, type1 = type1, type2 = type2, 
+                    type3 = type3, type4 = type4, type5 = type5, type6 = type6,
+                    summary = datSumm, stopExec = stopExec, 
+                    probDescr = probDescr, dataType = dataType, 
+                    studyStart = studyStart, studyEnd = studyEnd)
+    class(prbList) <- "bastaCheckCMR"
+  } else {
+    prbList <- list()
+    prbList$n <- nrow(object)
+    prbn <- 0
+    # Find relevant column:
+    colsnames <- c("Birth.Date", "Min.Birth.Date", "Max.Birth.Date", 
+                   "Entry.Date", "Depart.Date", "Depart.Type")
+    idcols <- which(!colsnames %in% colnames(object))
+    prbList$stopExec <- FALSE
+    if (length(idcols) > 0) {
+      prbn <- prbn + 1
+      if (!silent) {
+        cat("\nCritical column names missing:\n")
+        for (i in 1:length(idcols)) {
+          cat(sprintf("Column '%s' missing.\n", colsnames[idcols]))
+        }
+        cat("Column names required are:\n")
+        cat(sprintf("%s.\n", paste(colsnames, collapse = ", ")))
+      }
+      prbList$missCols <- idcols
+      prbList$stopExec <- TRUE
+    } else {
+      # Convert to dates:
+      object$Birth.Date <- as.Date(object$Birth.Date, format = "%Y-%m-%d")
+      object$Min.Birth.Date <- as.Date(object$Min.Birth.Date, format = "%Y-%m-%d")
+      object$Max.Birth.Date <- as.Date(object$Max.Birth.Date, format = "%Y-%m-%d")
+      object$Entry.Date <- as.Date(object$Entry.Date, format = "%Y-%m-%d")
+      object$Depart.Date <- as.Date(object$Depart.Date, format = "%Y-%m-%d")
+      
+      # Find NA records in dates:
+      prbList$nas <- list()
+      nnas <- 0
+      for (i in 1:length(colsnames)) {
+        idna <- which(is.na(object[[colsnames[i]]]))
+        if (length(idna) > 0) {
+          prbList$nas[[colsnames[i]]] <- idna
+          nnas <- nnas + 1
+        } else {
+          prbList$nas[[colsnames[i]]] <- "None"
+        }
+      }
+      if (nnas > 0) {
+        if (!silent) {
+          cat(sprintf("\nThere are %s columns with NA records\n", nnas))
+          cat("Use print(object) to review NA records.\n")
+        }
+        prbList$stopExec <- TRUE
+      }
+      
+      # Find date ranges:
+      prbList$DateRan <- apply(object[, colsnames[-6]], 2, range, na.rm = TRUE)
+      
+      # Find inconsistencies between dates:
+      datepr <- c("Min Birth > Birth", "Birth > Max Birth", 
+                  "Min Birth > Max Birth", "Birth > Entry", "Min Birth > Entry",
+                  "Max Birth > Entry", "Entry > Depart")
+      nchpr <- nchar(datepr)
+      maxch <- max(nchpr)
+      prbList$probDescr <- datepr
+      prbList$MinBBirth <- which(object$Min.Birth.Date > object$Birth.Date)
+      prbList$BirthMaxB <- which(object$Birth.Date > object$Max.Birth.Date)
+      prbList$MinBMaxB <- which(object$Min.Birth.Date > object$Max.Birth.Date)
+      prbList$BirthEntr <- which(object$Birth.Date > object$Entry.Date)
+      prbList$MinBEntr <- which(object$Min.Birth.Date > object$Entry.Date)
+      prbList$MaxBEntr <- which(object$Max.Birth.Date > object$Entry.Date)
+      prbList$EntrDep <- which(object$Entry.Date > object$Depart.Date)
+      idlens <- grep("MinBBirth", names(prbList)):grep("EntrDep", names(prbList))
+      dateslen <- sapply(idlens, function(pr) length(prbList[[pr]]))
+      names(dateslen) <- names(prbList)[idlens]
+      if (any(dateslen > 0)) {
+        if (!silent) {
+          cat("\nThe following number of records\nhave inconsistencies between dates:\n")
+          for (i in which(dateslen > 0)) {
+            cat(sprintf("%s%s: %s records\n", 
+                        datepr[i], paste(rep(" ", maxch + 2 - nchpr[i]),
+                                         collapse = ""), dateslen[i]))
+          }
+          cat("\nUse print(object) to find inconsistent records.\n")
+        }
+        prbList$stopExec <- TRUE
+      } else {
+        if (!silent) {
+          cat("\nNo inconsistencies between dates.\n")
+        }
+      }
+      # Find types of departue types
+      prbList$DepartType <- table(object$Depart.Type)
+      departType <- as.character(object$Depart.Type)
+      if (!all(departType %in% c("C", "D"))) {
+        prbList$stopExec <- TRUE
+      }
+      
+      # Uncensored individuals:
+      prbList$idUnCens <- which(departType == "D")
+      prbList$nUnCens <- length(prbList$idUnCens)
+      
+      # Censored individuals:
+      prbList$idCens <- which(departType == "C")
+      prbList$nCens <- length(prbList$idCens)
+      
+      # Birth times to be estimated:
+      prbList$idNoBirth <- which(object$Birth.Date != object$Min.Birth.Date)
+      prbList$nNoBirth <- length(prbList$idNoBirth)
+    }
+    
+    # Output:
+    class(prbList) <- "bastaCheckCens"
+  }
+  return(prbList)
+}
 
+# Print function for data check:
+print.bastaCheckCMR <- function(bastacheck) {
+  cat(sprintf("DATA CHECK: %s\n", Sys.time()))
+  cat("================================\n")
+  
+  datSumm <- bastacheck$summary
+  nchDsum <- sapply(1:length(datSumm), function(dd) {
+    nch <- nchar(datSumm[[dd]])
+    if (is.na(nch)) nch <- 2
+    return(nch)
+    })
+  maxNchDsum <- max(nchDsum)
+  summCats <- c("Number of individuals", "Number with known birth year",
+                "Number with known death year", "Number with known birth\n  AND death years", "Number of recaptures", "Earliest detection year",
+                "Latest detection year", "Earliest birth year",
+                "Latest birth year", "Earliest death year", "Latest death year")
+  nchCats <- nchar(summCats)
+  nchCats[4] <- 15
+  maxNchCats <- max(nchCats)
+  tNch <- maxNchDsum + maxNchCats + 1
+  
+  cat("\nDATA SUMMARY:\n=============\n")
+  for (ich in 1:length(datSumm)) {
+    catLab <- sprintf("- %s:%s%s\n", summCats[ich], 
+                      paste(rep(" ", tNch - nchCats[ich] - nchDsum[ich]), 
+                            collapse = ""), datSumm[[ich]])
+    cat(catLab)
+  }
+  
+  cat("\nNUMBER OF PROBLEMATIC RECORDS:\n==============================\n")
+  probDescr <- bastacheck$probDescr
+  nchCats <- sapply(1:length(probDescr), function(dd) nchar(probDescr[dd]))
+  nPrb <- sapply(1:length(probDescr), function(ipr) {
+    ity <- sprintf("type%s", ipr)
+    nipr <- length(bastacheck[[ity]])
+    return(nipr)
+  })
+  nchPrb <- nchar(nPrb)
+  tNch <- max(nchCats) + max(nchPrb) + 1
+  
+  if (bastacheck$stopExec) {
+    for (ipr in 1:6) {
+      catLab <- sprintf("- %s:%s%s\n", probDescr[ipr], 
+                        paste(rep(" ", tNch - nchCats[ipr] - nchPrb[ipr]), 
+                              collapse = ""), nPrb[[ipr]])
+      cat(catLab)
+    }
+    cat("\nNote: you can use function FixCMRdata() to fix issues.\n\n")
+  } else {
+    cat("No problematic records detected.\n\n")
+  }
+}  
 
+print.bastaCheckCens <- function(bastacheck) {
+  cat(sprintf("DATA CHECK: %s\n", Sys.time()))
+  cat("================================\n")
+  
+  if ("missCols" %in% names(bastacheck)) {
+    cat("Data object is missing the following columns:\n")
+    cat(sprintf("%s.\n", paste(bastacheck$missCols, collapse = ", ")))
+    cat("The analysis cannot be performed without these columns.")
+  } else {
+    cat("\nDATA SUMMARY:\n=============\n")
+    # Total number of records:
+    cat(sprintf("Total number of records  : %s\n", bastacheck$n))
+    # Number of censored records:
+    cat(sprintf("Number censored (C)      : %s\n", bastacheck$nCens))
+    # Number of censored records:
+    cat(sprintf("Number uncensored (D)    : %s\n", bastacheck$nUnCens))
+    # Number of records with unknown birth:
+    cat(sprintf("Number with unknown birth: %s\n", bastacheck$nNoBirth))
+    
+    
+    # Dates columns with NAs:
+    cat("\nNAs IN DATES COLUMNS:\n")
+    cat("---------------------\n")
+    nalen <- sapply(1:length(bastacheck$nas), 
+                    function(ii) {
+                      if (bastacheck$nas[[ii]][1] != "None") {
+                        nna <- length(bastacheck$nas[[ii]])
+                      } else {
+                        nna <- 0
+                      }
+                      return(nna)
+                    })
+    names(nalen) <- names(bastacheck$nas)
+    idna <- which(nalen > 0)
+    nachar <- nchar(names(bastacheck$nas))
+    mnach <- max(nachar)
+    if (any(nalen > 0)) {
+      cat("NAs found in the following dates columns:\n")
+      for (ii in idna) {
+        cat(sprintf("%s:\n", names(bastacheck$nas)[ii]))
+        print(bastacheck$nas[[ii]])
+        cat("\n")
+      }
+    } else {
+      cat("No NAs found in dates columns.\n")
+    }
+    
+    
+    # Dates ranges:
+    cat("\nDATES RANGES:\n")
+    cat("-------------\n")
+    dtab <- bastacheck$DateRan
+    idna <- which(is.na(dtab))
+    if (length(idna) > 0) dtab[idna] <- "NANA-NA-NA"
+    cat(sprintf("%s\n", paste(colnames(dtab), collapse = "\t")))
+    for(ii in 1:2) {
+      cat(sprintf("%s\n", paste(dtab[ii, ], collapse = "\t")))
+    }
+    
+    
+    # Inconsistencies in the dates columns:
+    cat("\nINCONSISTENCIES BETWEEN DATES COLUMNS:\n")
+    cat("--------------------------------------\n")
+    
+    datepr <- c("Min Birth > Birth", "Birth > Max Birth", 
+                "Min Birth > Max Birth", "Birth > Entry", "Min Birth > Entry",
+                "Max Birth > Entry", "Entry > Depart")
+    idlens <- c("MinBBirth", "BirthMaxB", "MinBMaxB", "BirthEntr", "MinBEntr",
+                "MaxBEntr", "EntrDep")
+    nchpr <- nchar(datepr)
+    maxch <- max(nchpr)
+    dateslen <- sapply(idlens, function(pr) length(bastacheck[[pr]]))
+    names(dateslen) <- names(bastacheck)[idlens]
+    if (any(dateslen > 0)) {
+      cat("Records with inconsistencies between dates:\n")
+      for (i in which(dateslen > 0)) {
+        cat(sprintf("\n%s:\n", datepr[i]))
+        print(bastacheck[[idlens[i]]])
+      }
+    } else {
+      cat("None.\n")
+    }
+    
+    # Inconsistencies in Depart Type:
+    cat("\nINCONSISTENCIES IN DEPARTURE TYPES:\n")
+    cat("-----------------------------------\n")
+    if (length(which(!names(bastacheck$DepartType) %in% c("C", "D")))) {
+      cat(sprintf("Departure type codes found: %s\n", 
+                  paste(names(bastacheck$DepartType), collapse = ", ")))
+      cat("\nWarning: only departure types required\nare C (censored) and D (dead).")
+    } else {
+      cat("None\n")
+    }
+  }
+  
+}  
+
+# Function to fix CMR data issues:
+FixCMRdata <- function(object, studyStart, studyEnd, autofix = rep(0, 6), 
+                       silent = TRUE) {
+  dcheck <- DataCheck(object = object, studyStart = studyStart, 
+                      studyEnd = studyEnd, silent = TRUE)
+  
+  # Extract study duration:
+  Ti <- studyStart
+  Tf <- studyEnd
+  st <- Ti:Tf
+  nt <- length(st)
+  
+  # Individual IDs:
+  idnames <- object[, 1]
+  
+  # Number of records:
+  n <- nrow(object)
+  
+  # Birth and death:
+  bd <- as.matrix(object[, 2:3])
+  
+  # Recapture matrix:
+  Y <- as.matrix(object[, 1:nt + 3]); colnames(Y) <- st
+  Y1 <- Y
+  Y1[which(Y > 1)] <- 1
+  Tm <- matrix(st, n, nt, byrow = TRUE)
+  
+  # Covariates:
+  if(ncol(object) > nt + 3){
+    Z <- as.matrix(object[, (nt + 4):ncol(object)])
+  } else {
+    Z <- matrix(1, n, 1)
+  }
+  
+  # 1. Death before observations start
+  type1 <- dcheck$type1
+  if (length(type1) != 0) {
+    cat("The following rows deaths occur before observations start:\n")
+    print(type1)
+    
+    # Actions - remove those rows from bd, Y and Z
+    if (autofix[1] == 1) {
+      bd <- bd[-type1, ]
+      Y <- Y[-type1, ]
+      Y1 <- Y1[-type1, ]
+      idnames <- idnames[-type1]
+      Z <- Z[-type1, ]
+      Tm <- Tm[-type1, ]
+      n <- nrow(Y)
+      cat("These records have been removed from the Dataframe\n")
+    }
+  }
+  
+  # 2. No birth/death AND no obervations
+  type2 <- dcheck$type2
+  if (length(type2) != 0) {
+    cat("The following rows have no object (unknown birth, unknown death, and no observations):\n")
+    print(type2)
+    
+    #Actions - remove those rows from bd, Y and Z
+    if (autofix[2] == 1) {
+      bd <- bd[-type2, ]
+      Y <- Y[-type2, ]
+      Y1 <- Y1[-type2, ]
+      idnames <- idnames[-type2]
+      Z <- Z[-type2, ]
+      Tm <- Tm[-type2, ]
+      n <- nrow(Y)
+      cat("These records have been removed from the Dataframe\n")
+    }
+  }
+  
+  # 3. Birth after death 
+  type3 <- dcheck$type3
+  if (length(type3) != 0) {
+    cat("The following rows have birth dates that are later than their death dates:\n")
+    print(type3)
+    
+    # Actions - remove the death, birth, both records?
+    if (autofix[3] == 1) {
+      bd[type3,2] = 0; cat("The death records have been replaced with 0.\n\n")
+    } else if (autofix[3] == 2) {
+      bd[type3,1] = 0; cat("The birth records have been replaced with 0\n")
+    } else if (autofix[3] == 3) {
+      bd[type3,1:2] = 0; cat("The birth and death records have been replaced with 0\n")
+    }
+  }
+  
+  # 4. Observations after death
+  # Calculate first and last time observed: 
+  type4 <- dcheck$type4
+  if (length(type4) != 0) {
+    cat("The following rows have observations that occur after the year of death:\n")
+    print(type4)
+    
+    # Actions - remove spurious post-death observations
+    if (autofix[4] == 1) {
+      Ymd <- ((Tm - bd[, 2]) * Y1)[type4, ]
+      Ymd[Ymd > 0] <- 0
+      Ymd[Ymd < 0] <- 1
+      Y[type4,] <- Ymd
+      Y1[type4,] <- Ymd
+      cat("Observations that post-date year of death have been removed.\n\n")
+    }
+  }
+  
+  # 5. Observations before birth
+  type5 <- dcheck$type5
+  
+  if (length(type5) != 0) {
+    cat("The following rows have observations that occur before the year of birth:\n")
+    print(type5)
+    
+    # Actions - remove spurious pre-birth observations
+    if (autofix[5] == 1) {
+      Ymd <- ((Tm - bd[, 1]) * Y1)[type5, ]
+      Ymd[Ymd > 0] <- 1
+      Ymd[Ymd < 0] <- 0
+      Y[type5, ] <- Ymd
+      Y1[type5, ] <- Ymd
+      cat("Observations that pre-date year of birth have been removed.\n\n")
+    }
+  }
+  
+  # 6. Year of birth should be a zero in recapture matrix Y
+  idb <- which(bd[, 1] > 0 & !is.na(bd[, 1]) & bd[, 1] >= Ti & bd[, 1] <= Tf)
+  bcol <- bd[idb, 1] - Ti
+  bpos <- bcol * n + idb
+  type6 <- dcheck$type6
+  if (length(type6) != 0) {
+    cat("The following rows have a one in the recapture matrix in the birth year:\n")
+    print(type6)
+    
+    # Actions - put a zero.
+    if (autofix[6] == 1) {
+      Y[bpos] <- 0
+      Y1[bpos] <- 0
+      cat("These cells have been changed to 0.\n\n")
+    }
+  }
+  
+  n <- nrow(Y)   
+  
+  # All OK:
+  
+  if (ncol(object) > nt + 3) {
+    newData <- data.frame(idnames, bd, Y, Z)
+  } else {
+    newData <- data.frame(idnames, bd, Y)
+  } 
+  dcheck$newData <- newData
+  dcheckNew <- DataCheck(object = newData, studyStart = studyStart, 
+                         studyEnd = studyEnd)
+  
+  return(dcheckNew)
+}
 
 # A.2) main basta function:
 # ------------------------- #
-basta <-
-  function(object, ... ) UseMethod("basta")
+basta <- function(object, ... ) UseMethod("basta")
 
 basta.default <- function(object, dataType = "CMR", 
                           model = "GO", shape = "simple", 
@@ -45,8 +607,7 @@ basta.default <- function(object, dataType = "CMR",
                           formulaRecap = NULL, recaptTrans = studyStart, 
                           niter = 11000, burnin = 1001, thinning = 20, 
                           nsim = 1, parallel = FALSE, ncpus = 2, 
-                          lifeTable = TRUE, updateJumps = TRUE, 
-                          negSenescence = FALSE, ...) {
+                          updateJumps = TRUE, negSenescence = FALSE, ...) {
   # Create BaSTA environment:
   # bastaenv <- new.env()
   
@@ -217,6 +778,7 @@ basta.default <- function(object, dataType = "CMR",
   # Summary information for parameters:
   bastaFinal$fullpar <- fullParObj
   bastaFinal$simthe <- defTheta
+  bastaFinal$jumps <- jumpRun$jumps
   
   # Covariate information:
   bastaFinal$covs <- covsNames
@@ -235,7 +797,7 @@ basta.default <- function(object, dataType = "CMR",
                                     "Continuous", "DataType")
   
   # Life table:
-  bastaFinal$lifeTable <- .CalcLifeTable(bastaOut, lifeTable, covObj, algObj,
+  bastaFinal$lifeTable <- .CalcLifeTable(bastaFinal, covObj, algObj,
                                          dataObj)
   
   # Remove variables from global environment:
@@ -249,8 +811,7 @@ basta.default <- function(object, dataType = "CMR",
 # A.3) plotting BaSTA outputs:
 # ---------------------------- #
 plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
-                       densities = FALSE, noCIs = FALSE, 
-                       addKM = TRUE, ...) {
+                       densities = FALSE, noCIs = FALSE, ...) {
   args <- list(...)
   nv <- ifelse(plot.type == "traces", x$settings['nsim'], length(x$surv))
   
@@ -280,61 +841,161 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
     lty <- 1
   }
   op <- par(no.readonly = TRUE)
-  # ======= #
-  # TRACES:
-  # ======= #
+  # ========== #
+  # PARAMETERS:
+  # ========== #
   if (plot.type == "traces") {
     nsim <- x$settings["nsim"]
-    if (trace.name == "theta") {
-      ncat <- length(x$covs$cat)
-      pcol <- ifelse(is.null(ncat), 1, ncat)
-      prow <- ceiling(x$fullpar$theta$len / pcol)
-      npar <- x$simthe$length
-      allnpar <- x$fullpar$theta$len
-    } else if (trace.name == "gamma") {
-      npar <- ncol(x$runs$sim.1$gamma)
-      if (is.null(npar)) {
-        stop("'gamma' parameters not calculated (not propHaz)", call. = FALSE)
-      }
-      pcol <- ceiling(npar / 2)
-      prow <- ceiling(npar / pcol)
-      allnpar <- x$fullpar$gamma$len
-    } else if (trace.name == "lambda") {
-      npar <- ifelse("lambda" %in% colnames(x$params), 1, NA)
-      if (is.na(npar)) {
-        stop("'lambda' parameters not calculated (no minAge)", call. = FALSE)
-      }
-      pcol <- 1
-      prow <- 1
-      allnpar <- 1
-    } else if (trace.name == "pi") {
-      if (x$modelSpecs["DataType"] == "CMR") {
-        npar <- ncol(x$runs$sim.1$pi)
+    # ----------- #
+    # densities:
+    # ---------- #
+    if (densities) {
+      if (trace.name == "theta") {
+        if (x$covs$class %in% c("fused", "inMort")) {
+          if (!is.na(x$covs$cat[1])) {
+            ncat <- length(x$covs$cat)
+          } else {
+            ncat <- 1
+          }
+        } else {
+          ncat <- 1
+        }
+        pcol <- 1
+        idpars <- sapply(x$fullpar$theta$names, function(pn) {
+          grep(pn, colnames(x$params))
+        })
+        npar <- x$simthe$length
+        prow <- npar
+      } else if (trace.name == "gamma") {
+        idpars <- grep("gamma", colnames(x$params))
+        if (is.null(npar)) {
+          stop("'gamma' parameters not calculated (not propHaz)", call. = FALSE)
+        }
         pcol <- ceiling(npar / 2)
         prow <- ceiling(npar / pcol)
-        allnpar <- x$fullpar$pi$len
+        npar <- x$fullpar$gamma$len
+        
+      } else if (trace.name == "lambda") {
+        npar <- ifelse("lambda" %in% colnames(x$params), 1, NA)
+        if (is.na(npar)) {
+          stop("'lambda' parameters not calculated (no minAge)", call. = FALSE)
+        }
+        pcol <- 1
+        prow <- 1
+        idpars <- grep("lambda", colnames(x$params))
+      } else if (trace.name == "pi") {
+        if (x$modelSpecs["DataType"] == "CMR") {
+          pcol <- ceiling(npar / 2)
+          prow <- ceiling(npar / pcol)
+          npar <- x$fullpar$pi$len
+          idpars <- grep("pi", colnames(x$params))
+        } else {
+          stop("Argument 'trace.name' cannot be 'pi'.\n", 
+               "No recapture probabilities estimated, dataType is not CMR.",
+               call. = FALSE)
+        }
       } else {
-        stop("Argument 'trace.name' cannot be 'pi'.\n", 
-        "No recapture probabilities estimated, dataType is not CMR.",
-             call. = FALSE)
+        stop("Wrong 'trace.name' specified.\n", 
+             "Names are 'theta', 'gamma', 'lambda', or 'pi'", call. = FALSE)
       }
+      par (mfrow = c(prow, pcol), mar = c(4, 4, 1, 1))
+      for (pp in 1:npar) {
+        if (trace.name == "theta") {
+          main <- x$simthe$name[pp]
+        } else {
+          main <- x$fullpar[[trace.name]]$names[pp]
+        }
+        idpp <- grep(main, colnames(x$params))
+        ddlist <- list()
+        xlim <- c(NA, NA)
+        ylim <- c(0, NA)
+        for (ppi in 1:length(idpp)) {
+          ddlist[[ppi]] <- density(x$params[, idpp[ppi]])
+          xlim[1] <- min(c(xlim[1], ddlist[[ppi]]$x), na.rm = TRUE)
+          xlim[2] <- max(c(xlim[2], ddlist[[ppi]]$x), na.rm = TRUE)
+          ylim[2] <- max(c(ylim[2], ddlist[[ppi]]$y), na.rm = TRUE)
+        }
+        plot(xlim, ylim, col = NA, xlab = "", ylab = "", 
+             main = main)
+        for (ppi in 1:length(idpp)) {
+          xx <- ddlist[[ppi]]$x
+          yy <- ddlist[[ppi]]$y
+          lines(xx, yy, col = Palette[ppi])
+          polygon(c(xx, rev(xx)), c(yy, rep(0, length(yy))), 
+                  col = adjustcolor(Palette[ppi], alpha.f = 0.25), border = NA)
+        }
+      }
+      if (x$covs$class %in% c("fused", "inMort") & trace.name == "theta") {
+        legend("topright", legend = names(x$covs$cat), 
+               col = Palette[1:length(idpp)],
+               pch = 22, pt.bg = adjustcolor(Palette[1:length(idpp)], 
+                                             alpha.f = 0.25), 
+               pt.cex = 2, bty = "n")
+      }
+      
+      # ------- #
+      # traces:
+      # ------- #
     } else {
-      stop("Wrong 'trace.name' specified.\n", 
-           "Names are 'theta', 'gamma', 'lambda', or 'pi'", call. = FALSE)
-    }
-    keep <- seq(1, x$setting["niter"], x$settings["thinning"])
-    par (mfrow = c(prow, pcol), mar = c(4, 4, 1, 1))
-    for (pp in 1:allnpar) {
-      ylim <- 
-        range(sapply(1:nsim, function(ii) 
-          range(x$runs[[ii]][[trace.name]][, pp]))) 
-      xlim <- c(0, nrow(x$runs[[1]][[trace.name]]))
-      main <- x$fullpar[[trace.name]]$names[pp]
-      plot(xlim, ylim, col = NA, xlab = "", ylab = "", 
-           main = main)
-      for (tt in 1:nsim) {
-        lines(keep, x$runs[[tt]][[trace.name]][keep, pp], 
-              col = Palette[tt])
+      if (trace.name == "theta") {
+        if (x$covs$class %in% c("fused", "inMort")) {
+          if (!is.na(x$covs$cat[1])) {
+            ncat <- length(x$covs$cat)
+          } else {
+            ncat <- 1
+          }
+        } else {
+          ncat <- 1
+        }
+        pcol <- ncat
+        prow <- ceiling(x$fullpar$theta$len / pcol)
+        npar <- x$simthe$length
+        allnpar <- x$fullpar$theta$len
+      } else if (trace.name == "gamma") {
+        npar <- ncol(x$runs$sim.1$gamma)
+        if (is.null(npar)) {
+          stop("'gamma' parameters not calculated (not propHaz)", call. = FALSE)
+        }
+        pcol <- ceiling(npar / 2)
+        prow <- ceiling(npar / pcol)
+        allnpar <- x$fullpar$gamma$len
+      } else if (trace.name == "lambda") {
+        npar <- ifelse("lambda" %in% colnames(x$params), 1, NA)
+        if (is.na(npar)) {
+          stop("'lambda' parameters not calculated (no minAge)", call. = FALSE)
+        }
+        pcol <- 1
+        prow <- 1
+        allnpar <- 1
+      } else if (trace.name == "pi") {
+        if (x$modelSpecs["DataType"] == "CMR") {
+          npar <- ncol(x$runs$sim.1$pi)
+          pcol <- ceiling(npar / 2)
+          prow <- ceiling(npar / pcol)
+          allnpar <- x$fullpar$pi$len
+        } else {
+          stop("Argument 'trace.name' cannot be 'pi'.\n", 
+               "No recapture probabilities estimated, dataType is not CMR.",
+               call. = FALSE)
+        }
+      } else {
+        stop("Wrong 'trace.name' specified.\n", 
+             "Names are 'theta', 'gamma', 'lambda', or 'pi'", call. = FALSE)
+      }
+      keep <- seq(1, x$setting["niter"], x$settings["thinning"])
+      par (mfrow = c(prow, pcol), mar = c(4, 4, 1, 1))
+      for (pp in 1:allnpar) {
+        ylim <- 
+          range(sapply(1:nsim, function(ii) 
+            range(x$runs[[ii]][[trace.name]][, pp]))) 
+        xlim <- c(0, nrow(x$runs[[1]][[trace.name]]))
+        main <- x$fullpar[[trace.name]]$names[pp]
+        plot(xlim, ylim, col = NA, xlab = "", ylab = "", 
+             main = main)
+        for (tt in 1:nsim) {
+          lines(keep, x$runs[[tt]][[trace.name]][keep, pp], 
+                col = Palette[tt])
+        }
       }
     }
     # =========== #
@@ -352,6 +1013,14 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         xlim <- c(0, 0)
       }
       vars <- names(x$mort)
+      if ("names.legend" %in% names(args)) {
+        names.legend <- args$names.legend
+        if (length(vars) != length(names.legend)) {
+          warning(sprintf("Wrong length of names.legend, length should be equal to number of categorical covariates, i.e., %s.", length(vars)))
+        } else {
+          vars <- names.legend
+        }
+      }
       minAge <- as.numeric(x$modelSpecs["min. age"])
       for (nta in 1:length(x$mort)) {
         cuts <- x$cuts[[nta]]
@@ -405,13 +1074,17 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       if (is.data.frame(x$lifeTable[[nta]])) {
         lifeTab <- x$lifeTable[[nta]]
+        addLTCIs <- FALSE
       } else {
         lifeTab <- x$lifeTable[[nta]]$Mean
+        addLTCIs <- TRUE
+        lifeTabL <- x$lifeTable[[nta]]$Lower
+        lifeTabU <- x$lifeTable[[nta]]$Upper
       }
       
-      plot(xlim, ylim, col = NA, xlab = "", ylab = "Survival", 
+      plot(xlim, ylim, col = NA, xlab = "Age", ylab = "Survival", 
            main = catname[nta])
-      if (minAge > 0) abline(v = minAge, lty = 2)
+      if (minAge > 0) abline(v = minAge, lty = 2, col = 'orange')
       nn <- 0
       cuts <- x$cuts[[nta]]
       yy <- x$surv[[nta]][, cuts]
@@ -424,10 +1097,14 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       lwdd <- ifelse(length(lwd) > 1, lwd[1], lwd)
       ltyy <- ifelse(length(lty) > 1, lty[1], lty)
       lines(lifeTab$Ages, lifeTab$lx, type = "s")
+      if (addLTCIs) {
+        lines(lifeTabL$Ages, lifeTabL$lx, type = "s", lty = 2)
+        lines(lifeTabU$Ages, lifeTabU$lx, type = "s", lty = 2)
+      }
       lines(xx + minAge, yy[1, ], lwd = lwdd, col = Palette[1], 
             lty = ltyy)
       if (nta == ncat) {
-        legend('topright', c("Kapplan-Meier", "Estimated survival"), 
+        legend('topright', c("Life table survival", "Estimated survival"), 
                col = c(1, Palette[1]), lwd = 2, bty = 'n')
       }
     }
@@ -473,8 +1150,7 @@ print.basta <- function(x, ...) {
 
 # A.5) Summary for BaSTA outputs:
 # ------------------------------- #
-summary.basta <-
-  function(object,...){
+summary.basta <- function(object, ...){
     extraArgs       <- list(...)
     if (length(extraArgs) > 0) {
       if (!is.element('digits', names(extraArgs))){
@@ -652,6 +1328,69 @@ summary.basta <-
       dataObj$nUpdA <- length(dataObj$idNoA)
       dataObj$updA <- TRUE
       
+      # NOTE: addition of min-max birth and death (2022-05-17):
+      if ("minBirth" %in% colnames(object)) {
+        dataObj$minBirth <- object[, "minBirth"]
+        idMinB <- which(!is.na(dataObj$minBirth[dataObj$idNoB]))
+        if (length(idMinB) > 0) {
+          dataObj$idMinB <- dataObj$idNoB[idMinB]
+          dataObj$updMinB <- TRUE
+        } else {
+          dataObj$idMinB <- NA
+          dataObj$updMinB <- FALSE
+        }
+      } else {
+        dataObj$minBirth <- rep(NA, dataObj$n)
+        dataObj$idMinB <- NA
+        dataObj$updMinB <- FALSE
+      }
+      if ("maxBirth" %in% colnames(object)) {
+        dataObj$maxBirth <- object[, "maxBirth"]
+        idMaxB <- which(!is.na(dataObj$maxBirth[dataObj$idNoB]))
+        if (length(idMaxB) > 0) {
+          dataObj$idMaxB <- dataObj$idNoB[idMaxB]
+          dataObj$updMaxB <- TRUE
+        } else {
+          dataObj$idMaxB <- NA
+          dataObj$updMaxB <- FALSE
+        }
+      } else {
+        dataObj$maxBirth <- rep(NA, dataObj$n)
+        dataObj$idMaxB <- NA
+        dataObj$updMaxB <- FALSE
+      }
+      if ("minDeath" %in% colnames(object)) {
+        dataObj$minDeath <- object[, "minDeath"]
+        idMinD <- which(!is.na(dataObj$maxDeath[dataObj$idNoD]))
+        if (length(idMinD) > 0) {
+          dataObj$idMinD <- dataObj$idNoD[idMinD]
+          dataObj$updMinD <- TRUE
+        } else {
+          dataObj$idMinD <- NA
+          dataObj$updMinD <- FALSE
+        }
+      } else {
+        dataObj$minDeath <- rep(NA, dataObj$n)
+        dataObj$idMinD <- NA
+        dataObj$updMinD <- FALSE
+      }
+      if ("maxDeath" %in% colnames(object)) {
+        dataObj$maxDeath <- object[, "maxDeath"]
+        idMaxD <- which(!is.na(dataObj$maxDeath[dataObj$idNoD]))
+        if (length(idMaxD) > 0) {
+          dataObj$idMaxD <- dataObj$idNoD[idMaxD]
+          dataObj$updMaxD <- TRUE
+        } else {
+          dataObj$idMaxD <- NA
+          dataObj$updMaxD <- FALSE
+        }
+        
+      } else {
+        dataObj$maxDeath <- rep(NA, dataObj$n)
+        dataObj$idMaxD <- NA
+        dataObj$updMaxD <- FALSE
+      }
+      
       # 4.1.2 Calculate first and last time observed 
       #       and total number of times observed:
       ytemp <- t(t(dataObj$Y) * dataObj$study)
@@ -781,11 +1520,11 @@ summary.basta <-
     indBefMa[ageBefMa < algObj$minAge] <- 1
     ageBefMa[age >= algObj$minAge] <- algObj$minAge
     
-    # Ages at trunction and indicator after min age:
+    # Ages at truncation and indicator after min age:
     ageTrAftMa <- ageTr - algObj$minAge
     ageTrAftMa[ageTrAftMa < 0] <- 0
     
-    # Ages at trunction and indicator before min age:
+    # Ages at truncation and indicator before min age:
     ageTrBefMa <- ageTr
     ageTrBefMa[ageTr >= algObj$minAge] <- algObj$minAge
   } else {
@@ -844,22 +1583,14 @@ summary.basta <-
   covClass <- c("noCov", "noCovType", "noCovRecap")
   # Find if mortality covariates are not needed:
   # -------------------------------------------- #
-  if (is.null(algObj$formulaMort) & algObj$dataType == "CMR" & 
-      ncol(object) == dataObj$studyLen + 3) {
-    covObj$covs <- NULL
-  } else if (is.null(algObj$formulaMort) & algObj$dataType == "census") {
+  if (is.null(algObj$formulaMort)) {
     covObj$covs <- NULL
   } else {
     # When there should be covariates for mortality:
     # ---------------------------------------------- #
     # Construct covariate matrix:
-    if (is.null(algObj$formulaMort) & ncol(object) > dataObj$studyLen + 3) {
-      covMat <- as.matrix(object[, (dataObj$studyLen + 4):ncol(object)])
-      mode(covMat) <- "numeric"
-      colnames(covMat) <- colnames(object)[(dataObj$studyLen + 4):ncol(object)]
-    } else {
-      covMat <- .MakeCovMat(algObj$formulaMort, data = object)
-    }
+    covMat <- .MakeCovMat(algObj$formulaMort, data = object)
+    
     # Find covariate types (categorical vs continuous):
     covType <- .FindCovType(covMat)
     
@@ -1274,9 +2005,9 @@ summary.basta <-
   return(parCovObjn)
 }
 
-# ================================ #
-# ==== STATISTICAL FUNCTIONS: ====
-# ================================ #
+# =================================== #
+# ==== C) STATISTICAL FUNCTIONS: ====
+# =================================== #
 # --------------------------------- #
 # Truncated distribution functions:
 # --------------------------------- #
@@ -1760,16 +2491,68 @@ summary.basta <-
 # Likelihood function:
 .CalcLike <- function(dataObj, ...) UseMethod(".CalcLike")
 
+# .CalcLike.bastacmr <- function(dataObj, parCovObj, parObj, fullParObj, 
+#                                ageObj, likeObj, ind) {
+#   # First time created:
+#   if (inherits(parObj, "lambda")) {
+#     
+#     # log-interval censored or survival before min age:
+#     likeMbef <- log(exp(- parObj$lambda * ageObj$ages$ageBef[ind]) -
+#                       exp(- parObj$lambda * ageObj$ages$ageBef[ind] + 
+#                             dataObj$Dx) *
+#                       (1 - ageObj$inds$ageBef[ind]))
+#     
+#     # log-survival truncation before min age:
+#     likeHbefTr <- parObj$lambda * ageObj$ages$truBef[ind]
+#   } else {
+#     likeMbef <- 0
+#     likeHbefTr <- 0
+#   }
+#   # log-mortality after min age:
+#   likeMaft <- log(.CalcSurv(parCovObj$theta[ind, ], 
+#                             ageObj$ages$ageAft[ind])^exp(parCovObj$gamma[ind]) -
+#                     .CalcSurv(parCovObj$theta[ind, ], 
+#                               ageObj$ages$ageAft[ind] + 
+#                                 dataObj$Dx)^exp(parCovObj$gamma[ind])) * 
+#     ageObj$inds$uncens[ind] * (1 - ageObj$inds$ageBef[ind])
+#   
+#   # log-survival at truncation after min age: 
+#   # (CHANGE 2021-01-15, Missed prop. hazards)
+#   likeHaftTr <- exp(parCovObj$gamma[ind]) * 
+#     .CalcCumHaz(parCovObj$theta[ind, ], ageObj$ages$truAft[ind])
+#   
+#   # log-likelihood for ages (without recapture):
+#   likeAges <- likeMbef + likeMaft
+#   
+#   # log-likelihood for mortality parameters:
+#   likeObj$df$mort[ind] <- likeAges + likeHbefTr + likeHaftTr
+#   
+#   # Including recapture probability before first obs. and after last obs.:
+#   likeRecap <- c((ageObj$alive - dataObj$obsMat)[ind, ] %*% 
+#                    log(1 - parObj$pi[fullParObj$pi$idpi]))
+#   
+#   # log-likelihood for ages:
+#   likeObj$df$ages[ind] <- likeAges + likeRecap
+#   
+#   # Sum of log-like for parameters:
+#   likeObj$pars <- sum(likeObj$df$mort)
+#   
+#   # Assign class to likelihood object:
+#   class(likeObj) <- "likecmr"
+#   return(likeObj)
+# }
+
+
 .CalcLike.bastacmr <- function(dataObj, parCovObj, parObj, fullParObj, 
                                ageObj, likeObj, ind) {
   # First time created:
   if (inherits(parObj, "lambda")) {
     
     # log-interval censored or survival before min age:
-    likeMbef <- log(exp(- parObj$lambda * ageObj$ages$ageBef[ind]) -
-                      exp(- parObj$lambda * ageObj$ages$ageBef[ind] + 
-                            dataObj$Dx) *
-                      (1 - ageObj$inds$ageBef[ind]))
+    likeMbef <- (parObj$lambda * ageObj$ages$ageBef[ind] + dataObj$Dx -
+                   parObj$lambda * ageObj$ages$ageBef[ind]) * 
+      ageObj$inds$ageBef[ind] -
+      parObj$lambda * algObj$minAge * (1 - ageObj$inds$ageBef[ind])
     
     # log-survival truncation before min age:
     likeHbefTr <- parObj$lambda * ageObj$ages$truBef[ind]
@@ -1777,6 +2560,7 @@ summary.basta <-
     likeMbef <- 0
     likeHbefTr <- 0
   }
+  
   # log-mortality after min age:
   likeMaft <- log(.CalcSurv(parCovObj$theta[ind, ], 
                             ageObj$ages$ageAft[ind])^exp(parCovObj$gamma[ind]) -
@@ -2010,9 +2794,9 @@ summary.basta <-
   return(hRatio)
 }
 
-# ============================================= #
-# ==== SAMPLING, JUMP, AND MCMC FUNCTIONS: ====
-# ============================================= #
+# ================================================ #
+# ==== D) SAMPLING, JUMP, AND MCMC FUNCTIONS: ====
+# ================================================ #
 # -------------------- #
 # Sampling parameters:
 # -------------------- #
@@ -2113,6 +2897,21 @@ summary.basta <-
         # bi[idNoFirst] <- apply(cbind(bi[idNoFirst], 
         #                              ageObj$ages$death[idNoFirst]), 1, min)
       }
+      
+      # Find which fall below the minAge:
+      if (dataObj$updMinB) {
+        idMinB <- dataObj$idMinB[which(bi[dataObj$idMinB] <
+                                         dataObj$minBirth[dataObj$idMinB])]
+        bi[idMinB] <- dataObj$minBirth[idMinB]
+      }
+      
+      if (dataObj$updMaxB) {
+        idMaxB <- dataObj$idMaxB[which(bi[dataObj$idMaxB] >
+                                         dataObj$maxBirth[dataObj$idMaxB])]
+        bi[idMaxB] <- dataObj$maxBirth[idMaxB]
+      }
+      
+      # Fill in new birth times:
       ageObj$ages$birth <- bi
     }
     
@@ -2143,6 +2942,20 @@ summary.basta <-
           di[idNoLast[idDiLi]] <- ageObj$ages$birth[idNoLast[idDiLi]]
         }
       }
+      
+      # Find which fall below the minAge:
+      if (dataObj$updMinD) {
+        idMinD <- dataObj$idMinD[which(di[dataObj$idMinD] <
+                                         dataObj$minDeath[dataObj$idMinD])]
+        di[idMinD] <- dataObj$minDeath[idMinD]
+      }
+      
+      if (dataObj$updMaxD) {
+        idMaxD <- dataObj$idMaxD[which(di[dataObj$idMaxD] >
+                                         dataObj$maxDeath[dataObj$idMaxD])]
+        di[idMaxD] <- dataObj$maxDeath[idMaxD]
+      }
+      
       # di[idNoLast] <- apply(cbind(di[idNoLast], ageObj$ages$birth[idNoLast]),
       #                       1, max)
       ageObj$ages$death <- di
@@ -2545,23 +3358,33 @@ summary.basta <-
 }
 
 # ===================================== #
-# ==== FUNCTIONS FOR MCMC OUTPUTS: ====
+# ==== F) FUNCTIONS FOR MCMC OUTPUTS: ====
 # ===================================== #
 # Extract thinned sequences from multiple runs, calculate coefficients,
-# DIC and quantiles for mortality and survival:
+# DIC and quantiles for mortality, survival, summary statistics and ages:
 .ExtractParalOut <- function(bastaOut, keep, fullParObj, covsNames, nsim, 
                              dataObj, algObj, defTheta, .CalcMort, 
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric, covObj) {
+  nthin <- length(keep)
   parMat <- bastaOut[[1]]$theta[keep, ]
   fullParMat <- bastaOut[[1]]$theta
   parnames <- fullParObj$theta$names
   theMat <- parMat
   likePost <- bastaOut[[1]]$likePost[keep, ]
-  if (dataObj$updB) {
-    birthMat <- bastaOut[[1]]$B
+  
+  # Time of birth estimates:
+  birthMat <- matrix(dataObj$bi, dataObj$n, nthin * algObj$nsim)
+  
+  # Time of death estimates:
+  if (algObj$dataType == "census") {
+    deathMat <- matrix(dataObj$lastObs, dataObj$n, nthin * algObj$nsim)
+  } else {
+    deathMat <- matrix(dataObj$di, dataObj$n, nthin * algObj$nsim)
   }
+  
+  # Parameter matrices:
   if (covsNames$class %in% c("propHaz", "fused")) {
     parMat <- cbind(parMat, bastaOut[[1]]$gamma[keep, ])
     parnames <- c(parnames, fullParObj$gamma$names)
@@ -2577,42 +3400,51 @@ summary.basta <-
     parnames <- c(parnames, fullParObj$pi$names)
     fullParMat <- cbind(fullParMat, bastaOut[[1]]$pi)
   }
-  for (i in 2:nsim) {
-    if (is.matrix(theMat)) {
-      theMat <- rbind(theMat, bastaOut[[i]]$theta[keep, ])
-    } else {
-      theMat <- c(theMat, bastaOut[[i]]$theta[keep, ])
-    }
-    if (covsNames$class == "inMort") {
-      pmat <- bastaOut[[i]]$theta[keep, ]
-      fullPmat <- bastaOut[[i]]$theta
-    } else {
-      pmat <- cbind(bastaOut[[i]]$theta[keep, ],
-                    bastaOut[[i]]$gamma[keep, ])
-      fullPmat <- cbind(bastaOut[[i]]$theta, bastaOut[[i]]$gamma)
-    }
-    if (inherits(fullParObj, "lambda")) {
-      pmat <- cbind(pmat, bastaOut[[i]]$lambda[keep])
-      fullPmat <- cbind(fullPmat, bastaOut[[i]]$lambda)
-    }
-    if (inherits(fullParObj, "pi")) {
-      pmat <- cbind(pmat, bastaOut[[i]]$pi[keep, ])
-      fullPmat <- cbind(fullPmat, bastaOut[[i]]$pi)
-    }
-    
-    if (is.matrix(parMat)) {
-      parMat <- rbind(parMat, pmat)
-      fullParMat <- rbind(fullParMat, fullPmat)
-    } else {
-      parMat <- c(parMat, pmat)
-      parMat <- matrix(parMat, ncol = 1)
-      fullParMat <- c(fullParMat, fullPmat)
-    }
-    likePost <- rbind(likePost, bastaOut[[i]]$likePost[keep, ])
+  for (sim in 1:nsim) {
     if (dataObj$updB) {
-      birthMat <- rbind(birthMat, bastaOut[[i]]$B)
+      birthMat[dataObj$idNoB, 1:nthin + (sim - 1) * nthin] <- 
+        t(bastaOut[[sim]]$B)
+    }
+    if (dataObj$updD) {
+      deathMat[dataObj$idNoD, 1:nthin + (sim - 1) * nthin] <- 
+        t(bastaOut[[sim]]$D)
+    }
+    if (sim > 1) {
+      if (is.matrix(theMat)) {
+        theMat <- rbind(theMat, bastaOut[[sim]]$theta[keep, ])
+      } else {
+        theMat <- c(theMat, bastaOut[[sim]]$theta[keep, ])
+      }
+      if (covsNames$class == "inMort") {
+        pmat <- bastaOut[[sim]]$theta[keep, ]
+        fullPmat <- bastaOut[[sim]]$theta
+      } else {
+        pmat <- cbind(bastaOut[[sim]]$theta[keep, ],
+                      bastaOut[[sim]]$gamma[keep, ])
+        fullPmat <- cbind(bastaOut[[sim]]$theta, bastaOut[[sim]]$gamma)
+      }
+      if (inherits(fullParObj, "lambda")) {
+        pmat <- cbind(pmat, bastaOut[[sim]]$lambda[keep])
+        fullPmat <- cbind(fullPmat, bastaOut[[sim]]$lambda)
+      }
+      if (inherits(fullParObj, "pi")) {
+        pmat <- cbind(pmat, bastaOut[[sim]]$pi[keep, ])
+        fullPmat <- cbind(fullPmat, bastaOut[[sim]]$pi)
+      }
+      
+      if (is.matrix(parMat)) {
+        parMat <- rbind(parMat, pmat)
+        fullParMat <- rbind(fullParMat, fullPmat)
+      } else {
+        parMat <- c(parMat, pmat)
+        parMat <- matrix(parMat, ncol = 1)
+        fullParMat <- c(fullParMat, fullPmat)
+      }
+      likePost <- rbind(likePost, bastaOut[[sim]]$likePost[keep, ])      
     }
   }
+  
+  # Coefficients for parameters:
   colnames(parMat) <- parnames
   coeffs <- cbind(apply(parMat, 2, mean), apply(parMat, 2, sd), 
                   t(apply(parMat, 2, quantile, c(0.025, 0.975))), 
@@ -2624,7 +3456,7 @@ summary.basta <-
   colnames(coeffs) <- c("Mean", "StdErr", "Lower95%CI", "Upper95%CI", 
                         "SerAutocorr", "UpdateRate")
   if (nsim > 1) {
-    nthin <- length(keep)
+    
     idSims <- rep(1:algObj$nsim, each = nthin)
     Means <- apply(parMat, 2, function(x) 
       tapply(x, idSims, mean))
@@ -2666,12 +3498,33 @@ summary.basta <-
   kulLeib <- .CalcKulbackLeibler(coeffs, covObj, defTheta, fullParObj, 
                                  algObj)
   
-  # Mortality, survival and density quantiles:
-  bQuan <- dataObj$bi
-  if (dataObj$updB) {
-    bQuan[dataObj$idNoB] <- c(apply(birthMat, 2, quantile, 0.975))
+  # Agest at death
+  ageMat <- deathMat - birthMat
+  
+  # Age at death or last obs:
+  ageLast <- cbind(Mean = apply(ageMat, 1, mean),
+                   Median = apply(ageMat, 1, quantile, 0.5),
+                   Lower = apply(ageMat, 1, quantile, 0.025),
+                   Upper = apply(ageMat, 1, quantile, 0.975))
+  
+  
+  # Age at first detection:
+  if (algObj$dataType == "CMR") {
+    firstObs <- rep(dataObj$study[1], dataObj$n)
+    ageTruncMat <- firstObs - birthMat
+    ageTruncMat[which(ageTruncMat < 0)] <- 0
+  } else {
+    firstObs <- dataObj$firstObs
+    ageTruncMat <- firstObs - birthMat
   }
-  maxAge <- max(dataObj$lastObs - bQuan)
+  
+  ageFirst <- cbind(Mean = apply(ageTruncMat, 1, mean),
+                    Median = apply(ageTruncMat, 1, quantile, 0.5),
+                    Lower = apply(ageTruncMat, 1, quantile, 0.025),
+                    Upper = apply(ageTruncMat, 1, quantile, 0.975))
+  
+  # Mortality, survival and density quantiles:
+  maxAge <- max(ageLast)
   xv <- seq(0, maxAge * 4, length = 1000)
   tempOut <- list(params = parMat, theta = theMat)
   mortQuan <- .CalcDemoFunQuan(tempOut, xv, covsNames, defTheta, 
@@ -2698,13 +3551,16 @@ summary.basta <-
   for (nta in names(survQuan)) {
     cuts[[nta]] <- which(survQuan[[nta]][1, ] > 0.05)
   }
-  out <- list(params = parMat, theta = theMat, coefficients = coeffs, 
-              names = parnames, DIC = modSel, KullbackLeibler = kulLeib, 
-              PS = PSQuan, mort = mortQuan, surv = survQuan, dens = densQuan, 
-              x = xv, cuts = cuts, convergence = conv, 
-              convmessage = convmessage)
   
-  return(out)
+  # List of outputs:
+  outList <- list(params = parMat, theta = theMat, coefficients = coeffs, 
+                  names = parnames, DIC = modSel, KullbackLeibler = kulLeib, 
+                  PS = PSQuan, mort = mortQuan, surv = survQuan, 
+                  dens = densQuan, x = xv, cuts = cuts, ageLast = ageLast,
+                  ageFirst = ageFirst, convergence = conv, 
+                  convmessage = convmessage)
+  
+  return(outList)
 }
 
 # Calculate Kulback-Leibler discrepancies between parameters:
@@ -2852,7 +3708,7 @@ summary.basta <-
     } else {
       covinf$ga$coname <- names(covsNames$con)
       covinf$ga$conum <- length(covsNames$con)
-      fullm$ga$con <- out$params[, covinf$ga$coname]
+      fullm$ga$con <- out$params[, sprintf("gamma.%s", covinf$ga$coname)]
     }
   }
   idlambda <- grep("lambda", colnames(out$params))
@@ -2947,7 +3803,7 @@ summary.basta <-
 }
 
 # ================================ #
-# ==== DEMOGRAPHIC FUNCTIONS: ====
+# ==== G) DEMOGRAPHIC FUNCTIONS: ====
 # ================================ #
 # ------------------------------------------- #
 # Functions to calculate pace-shape measures:
@@ -2980,97 +3836,22 @@ summary.basta <-
   return(sqrt(sum((x[-length(x)] + dx/2 - ex)^2 * dS)) / ex)
 }
 
-# Function to calculate final pace-shape measures 
-# (REQUIRES CHECKING THE STRUCTURE OF THE COVARIATES OUTPUTS):
-.CalcPS <- function(object) {
-  xv <- object$x
-  dx <- xv[2] - xv[1]
-  # NOTE: CHECK HOW TO CONSTRUCT THE COVARIATE OUTPUTS....
-  PSqMat <- lapply(names(object$covs$cat), function(ss) {
-    idcov <- grep(ss, colnames(object$theta))
-    thetaMat <- object$theta[, idcov]
-    colnames(thetaMat) <- defTheta$name
-    surv <- apply(thetaMat, 1, function(th) .CalcSurv(th, xv))
-    Ex <- apply(surv, 2, .CalcEx, dx = dx)
-    Hx <- apply(surv, 2, .CalcHx, dx = dx)
-    Epx <- - log(Hx)
-    Gx <- apply(surv, 2, .CalcGx, dx = dx)
-    PSq <- rbind(c(mean(Ex), quantile(Ex, c(0.025, 0.975))),
-                 c(mean(Hx), quantile(Hx, c(0.025, 0.975))),
-                 c(mean(Epx), quantile(Epx, c(0.025, 0.975), na.rm = T)),
-                 c(mean(Gx), quantile(Gx, c(0.025, 0.975))))
-    dimnames(PSq) <- list(c("LifeExp", "LifeTableEntropy", "LifespanEqual",
-                            "Gini"), 
-                          c("Mean", "2.5%", "97.5%"))
-    return(PSq)
-  })
-  names(PSqMat) <- names(object$cov$cat)
-  return(PSqMat)
-}
-
 # --------------------- #
 # Construct life table:
 # --------------------- #
-# Function to calculate lifetable output:
-.CalcLifeTable <- function(bastaOut, lifeTable, covObj, algObj, dataObj) {
+# Function to calculate life table output:
+.CalcLifeTable <- function(bastaFinal, covObj, algObj, dataObj) {
   cat("Constructing life table... ")
-  if (dataObj$updA) {
-    nthin <- ceiling((algObj$niter - algObj$burnin + 1) / algObj$thinning)
-    if (dataObj$updB) {
-      bMat <- matrix(dataObj$bi, dataObj$n, nthin * algObj$nsim)
-    }
-    if (dataObj$updD) {
-      dMat <- matrix(dataObj$di, dataObj$n, nthin * algObj$nsim)
-    } else {
-      if (algObj$dataType == "census") {
-        dMat <- dataObj$lastObs
-      } else {
-        dMat <- dataObj$di
-      }
-    }
-    for (sim in 1:algObj$nsim) {
-      if (dataObj$updB) {
-        bMat[dataObj$idNoB, 1:nthin + (sim - 1) * nthin] <- 
-          t(bastaOut[[sim]]$B)
-      }
-      if (dataObj$updD) {
-        dMat[dataObj$idNoD, 1:nthin + (sim - 1) * nthin] <- 
-          t(bastaOut[[sim]]$D)
-      }
-    }
-  } else {
-    bMat <- dataObj$bi
-    if (algObj$dataType == "census") {
-      dMat <- dataObj$lastObs
-    } else {
-      dMat <- dataObj$di
-    }
-  }
   
   # Age at death or last obs:
-  ageLast <- dMat - bMat
-  
-  # Age first:
-  ageFirst <- dataObj$firstObs - bMat
-  
-  # Quantiles for last ages:
-  qAgeLast <- cbind(Mean = apply(ageLast, 1, mean),
-                    Median = apply(ageLast, 1, quantile, 0.5),
-                    Lower = apply(ageLast, 1, quantile, 0.025),
-                    Upper = apply(ageLast, 1, quantile, 0.975))
-  
-  # Quantiles for first ages:
-  qAgeFirst <- cbind(Mean = apply(ageFirst, 1, mean),
-                     Median = apply(ageFirst, 1, quantile, 0.5),
-                     Lower = apply(ageFirst, 1, quantile, 0.025),
-                     Upper = apply(ageFirst, 1, quantile, 0.975))
-  qAgeFirst[qAgeFirst < 0] <- 0
+  ageLastQuan <- bastaFinal$ageLast
+  ageFirstQuan <- bastaFinal$ageFirst
   
   # Number of levels:
-  nq <- ncol(qAgeFirst)
+  nq <- ncol(ageFirstQuan)
   
   # level names:
-  qnames <- colnames(qAgeFirst)
+  qnames <- colnames(ageFirstQuan)
   
   # Indicator for censored or death:
   departType <- rep("D", dataObj$n)
@@ -3079,8 +3860,23 @@ summary.basta <-
   }
   
   # Find maximum age:
-  maxAge <- max(qAgeLast)
-  ageFact <- 1
+  maxAge <- max(ageLastQuan)
+  
+  # vector of age intervals for dx values:
+  ageInts <- c(0, 0.5, 1, 3, 10, Inf)
+  dxVals <- c(0.05, 0.1, 0.25, 0.5, 1)
+  
+  # Verify that maxAge is larger than 3, otherwise change the scale to 
+  # intervals shorter than year:
+  dx <- dxVals[findInterval(maxAge, ageInts)]
+  
+  # Find categorical covariates:
+  if (is.null(covObj$cat)) {
+    covNames <- c("noCov")
+  } else {
+    covNames <- names(covObj$cat)
+  }
+  
   
   # Verify that maxAge is larger than 3, otherwise change the scale to months:
   # if (maxAge < 3) {
@@ -3092,17 +3888,11 @@ summary.basta <-
   #   ageFact <- 1
   # }
   
-  # Age vector:
-  agev <- (algObj$minAge * ageFact):maxAge
-  nage <- length(agev)
-  
+  # --------------------- #
+  # CALCULATE ESTIMATORS: 
+  # --------------------- #
   # Create Life tables:
-  LT  <- list()
-  if (is.null(covObj$cat)) {
-    covNames <- c("noCov")
-  } else {
-    covNames <- names(covObj$cat)
-  }
+  LT <- list()
   for (covar in covNames) {
     if (covar == "noCov") {
       idx <- 1:dataObj$n
@@ -3124,20 +3914,36 @@ summary.basta <-
     }
     LT[[covar]] <- list()
     for (ltt in 1:nq) {
-      x <- qAgeLast[idx, ltt]
-      xt <- qAgeFirst[idx, ltt]
+      if (algObj$minAge > 0) {
+        idx <- idx[which(ageLastQuan[idx, ltt] >= algObj$minAge)]
+      }
+      ageLast <- ageLastQuan[idx, ltt] - algObj$minAge
+      ageFirst <- ageFirstQuan[idx, ltt] - algObj$minAge
+      ageFirst[ageFirst < 0] <- 0
       depType <- departType[idx]
+      # Number of records:
+      n <- length(ageLast)
+      
+      # Set age first to 0 if NULL:
+      if (is.null(ageFirst)) {
+        ageFirst <- rep(0, n)
+      }
+      
+      # Unit age vector for that sex:
+      agev <- seq(from = 0, to = ceiling(max(ageLast[which(depType == "D")])), 
+                  by = dx)
+      nage <- length(agev)
       
       # Outputs:
       Nx <- Dx <- ax <- rep(0, nage)
       for (xx in 1:nage) {
         # A) EXPOSURES:
         # Find how many entered the interval (including truncated):
-        idNx <- which(xt < agev[xx] + 1 & x >= agev[xx])
+        idNx <- which(ageFirst < agev[xx] + dx & ageLast >= agev[xx])
         
         # Extract ages and departType:
-        xf <- xt[idNx]
-        xl <- x[idNx]
+        xf <- ageFirst[idNx]
+        xl <- ageLast[idNx]
         dt <- depType[idNx]
         
         # proportion of truncation in interval:
@@ -3145,7 +3951,7 @@ summary.basta <-
         trp[trp < 0] <- 0
         
         # proportion of censoring:
-        cep <- agev[xx] + 1 - xl
+        cep <- agev[xx] + dx - xl
         cep[cep < 0] <- 0
         cep[dt == "D"] <- 0
         
@@ -3155,41 +3961,52 @@ summary.basta <-
         
         # B) DEATHS:
         # Calculate total deaths in the interval:
-        idDx <- which(dt == "D" & xl < agev[xx] + 1)
+        idDx <- which(dt == "D" & xl < agev[xx] + dx)
+        # Dx[xx] <- length(idDx)
         Dx[xx] <- sum(nexp[idDx])
         
         # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
         if (Dx[xx] > 1) {
           ylived <- xl[idDx] - agev[xx]
-          ax[xx] <- sum(ylived) / length(idDx)
+          ax[xx] <- sum(ylived) / Dx[xx]
         } else {
           ax[xx] <- 0
         }
       }
+      
       # Age-specific mortality probability:
       qx <- Dx / Nx
+      qx[which(is.na(qx))] <- 0
       
       # Age-specific survival probability:
       px <- 1 - qx
       
       # Survivorship (or cumulative survival):
       lx <- c(1, cumprod(px))[1:nage]
+      # lx <- Nx / n
       
       # Number of individual years lived within the interval:
-      Lx <- lx * (1 + ax * qx)
+      Lx <- lx * (1 - ax * qx)
+      # Note: correction on the calculation of Lx (doesn't work when
+      #       there are censored and truncated records)
+      # Lx <- Nx - Dx * ax
       Lx[is.na(Lx)] <- 0
       
       # Total number of individual years lived after age x:
-      Tx <- rev(cumsum(rev(Lx)))
+      Tx <- rev(cumsum(rev(Lx))) * dx
       
       # Remaining life expectancy after age x:
-      ex <- Tx / lx
-      ex[is.na(ex)] <- 0
+      ex <- Tx / lx 
+      ex[which(is.na(ex))] <- 0
       
       # Life-table:
-      LT[[covar]][[qnames[ltt]]] <- 
-        data.frame(Ages = agev, Nx = Nx, Dx = Dx, lx = lx, px = px,
-                   qx = qx, Lx = Lx, Tx = Tx, ex = ex)      
+      lifetab <- data.frame(Ages = agev + algObj$minAge, Nx = Nx, Dx = Dx, 
+                            lx = lx, px = px, qx = qx, Lx = Lx, Tx = Tx, 
+                            ex = ex)
+      
+      # Fill up list:
+      LT[[covar]][[qnames[ltt]]] <- lifetab
+      
     }
   }
   cat("done.\n")
