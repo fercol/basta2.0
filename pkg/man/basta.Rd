@@ -68,9 +68,15 @@ basta(object, \dots)
 \details{
 \code{1) DATA TYPES:}
 
-The input \code{object} required by BaSTA needs to be constructed differently whether the data are of capture-mark-recapture or census. If \code{dataType = \dQuote{CMR}}, then the data frame requires the following structure. The first column is a vector of individual unique IDs, the second and third columns are birth and death years respectively. Columns \eqn{4, \dots, T+3} represent the observation window (i.e., recapture matrix) of \eqn{T} years. This is followed (optionally) by columns for categorical and continuous covariates.
+The input \code{object} required by BaSTA needs to be constructed differently whether the data are of capture-mark-recapture or census. 
 
-If \code{dataType = \dQuote{census}}, then the input data \code{object} requires at least five dates columns, namely \dQuote{Birth.Date}, \dQuote{Min.Birth.Date}, \dQuote{Max.Birth.Date}, \dQuote{Entry.Date}, and \dQuote{Depart.Date}. All dates need to be format as \dQuote{\%Y-\%m-\%d}. In addition, a \dQuote{Depart.Type} column is required with two types of departures \dQuote{C} for Censored and \dQuote{D} for dead.
+\code{a) capture-mark-recapture (CMR):}
+
+If \code{dataType = \dQuote{CMR}}, then the data frame requires the following structure. The first column is a vector of individual unique IDs, the second and third columns are birth and death years respectively. Columns \eqn{4, \dots, T+3} represent the observation window (i.e., recapture matrix) of \eqn{T} years. This is followed (optionally) by columns for categorical and continuous covariates (see \code{\link{bastaCMRdat}} for a CMR dataset example).
+
+\code{b) Census:}
+
+If \code{dataType = \dQuote{census}}, then the input data \code{object} requires at least five dates columns, namely \dQuote{Birth.Date}, \dQuote{Min.Birth.Date}, \dQuote{Max.Birth.Date}, \dQuote{Entry.Date}, and \dQuote{Depart.Date}. All dates need to be format as \dQuote{\%Y-\%m-\%d}. In addition, a \dQuote{Depart.Type} column is required with two types of departures \dQuote{C} for Censored and \dQuote{D} for dead (see \code{\link{bastaCensDat}} for a census dataset example).
 
 
 \code{2) INFERENCE ON AGE-SPECIFIC MORTALITY:}
@@ -215,7 +221,9 @@ Spiegelhalter, D.J., Best, N.G., Carlin, B.P. and van der Linde, A. (2002) Bayes
 \seealso{
 \code{\link{summary.basta}}, \code{print.basta}, \code{plot.basta} to visualise summary outputs for objects of class \dQuote{\code{basta}}. 
 
-\code{\link{CensusToCaptHist}} for raw data formatting.
+\code{\link{bastaCMRdat}} and \code{\link{bastaCensDat}} for examples of input CMR and census datasets, respectively.
+
+%%\code{\link{CensusToCaptHist}} for raw capture-recapture matrix formatting.
 }
 
 \examples{
