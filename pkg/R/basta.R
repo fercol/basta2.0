@@ -10,15 +10,15 @@
 # General Comments: 
 # -----------------
 # - Combine packages BaSTA and BaSTA.ZIMS 
-# - Extend the CMR part of the package to allow for covariates in recapture
-#   probabilities.
+# - Extend the CMR part of the package to allow testing the effect of 
+#   covariates in recapture probabilities (in progress).
 # - Allow the CMR part of the package to have Min. and Max. Birth dates
 # - Allow the CMR part to have times of censoring before the end of the 
 #   study.
 
 # List of names to change:
 # ------------------------
-# 1.- dataObj to dataObj
+# 1.- datObj to dataObj
 # 2.- parObj$theta$priorMu to parObj$theta$priorMean
 # 3.- parObj$gamma$priorMu to parObj$theta$priorMean
 # 4.- parObj$eta$priorMu to parObj$lambda$priorMean
@@ -178,7 +178,7 @@ DataCheck <- function(object, dataType = "CMR", studyStart = NULL,
                     probDescr = probDescr, dataType = dataType, 
                     studyStart = studyStart, studyEnd = studyEnd)
     class(prbList) <- "bastaCheckCMR"
-  } else {
+  } else if (dataType == "census") {
     prbList <- list()
     prbList$n <- nrow(object)
     prbn <- 0
@@ -285,6 +285,8 @@ DataCheck <- function(object, dataType = "CMR", studyStart = NULL,
     
     # Output:
     class(prbList) <- "bastaCheckCens"
+  } else {
+    stop("Wrong 'dataType' specified. Options are 'CMR' and 'census'.")
   }
   return(prbList)
 }
