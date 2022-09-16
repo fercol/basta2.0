@@ -742,8 +742,8 @@ basta.default <- function(object, dataType = "CMR",
       options(warn = -1)
       sfInit(parallel = TRUE, cpus = ncpus)
       sfExport(list = c(intVars, ".Random.seed"))
-      sfSource(file = "/Users/fernando/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
-      # sfLibrary(BaSTA.ZIMS)
+      sfSource(file = "/Users/colchero/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
+      # sfLibrary(BaSTA)
       bastaOut <- sfClusterApplyLB(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                                    parJumps = jumpRun$jumps)
       sfRemoveAll(hidden = TRUE)
