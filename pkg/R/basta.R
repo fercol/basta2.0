@@ -1252,6 +1252,65 @@ summary.basta <- function(object, ...){
     return(invisible(ans))
   }
 
+# A.6) construct capture-recapture matrix:
+CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
+  # Check data
+  if(class(ID) != "character") {
+    ID <- as.character(ID)
+  } 
+  if (is.numeric(d)) {
+    if (length(which(round(d) != d)) > 0) {
+      stop("Please provide integer values or Date class ", 
+           "values for argument 'd'.", call. = FALSE)
+    } else {
+      int <- d
+    }
+  } else if (is.character(d) | class(d) == "Date") {
+    if (is.character(d)) {
+      d <- as.Date(d, format = dformat)
+      if (length(which(is.na(d)))) {
+        stop("Wrong 'dformat' argument or wrong 'd' values.", 
+             call. = FALSE)
+      }
+    }
+    if (timeInt == "Y"){
+      int <- as.numeric(format(d, format = "%Y"))
+    } else if (timeInt == "M") {
+      int <- as.numeric(format(d, format = "%m")) + 
+        12 * (as.numeric(format(d, format = "%Y")) - 
+                min(as.numeric(format(d, format = "%Y"))))
+    } else if (timeInt == "D" | timeInt == "W") {
+      jul <- julian(d, origin = min(d)) + 1
+      if (timeInt == "W"){
+        int <- ceiling(jul / 7)
+      } else {
+        int <- jul
+      }
+    }
+  } else {
+    stop("Wrong class for argument 'd'. Values\n", 
+         "need to be of class 'integer', 'character' or 'Date'.", 
+         call. = FALSE)
+  }  
+  
+  # Construct capture-recapture matrix:
+  dint <- min(int):max(int)
+  ndint <- length(dint)
+  uniID <- sort(unique(ID))
+  n <- length(uniID)
+  mat <- matrix(0, n, ndint, dimnames = list(NULL, dint))
+  for (i in 1:ndint) {
+    idt <- which(d == dint[i])
+    idd <- which(uniID %in% ID[idt])
+    mat[idd, i] <- 1
+  }
+  
+  # Create data.frame with ID and Y:
+  dmat <- data.frame(ID = uniID, mat)
+  
+  return(dmat)
+}
+
 # ============================================ #
 # ==== B) FUNCTIONS FOR INTERNAL OBJECTS: ==== 
 # ============================================ #
@@ -1331,8 +1390,8 @@ summary.basta <- function(object, ...){
       dataObj$updA <- TRUE
       
       # NOTE: addition of min-max birth and death (2022-05-17):
-      if ("minBirth" %in% colnames(object)) {
-        dataObj$minBirth <- object[, "minBirth"]
+      if ("Min.Birth" %in% colnames(object)) {
+        dataObj$minBirth <- object[, "Min.Birth"]
         idMinB <- which(!is.na(dataObj$minBirth[dataObj$idNoB]))
         if (length(idMinB) > 0) {
           dataObj$idMinB <- dataObj$idNoB[idMinB]
@@ -1346,8 +1405,8 @@ summary.basta <- function(object, ...){
         dataObj$idMinB <- NA
         dataObj$updMinB <- FALSE
       }
-      if ("maxBirth" %in% colnames(object)) {
-        dataObj$maxBirth <- object[, "maxBirth"]
+      if ("Max.Birth" %in% colnames(object)) {
+        dataObj$maxBirth <- object[, "Max.Birth"]
         idMaxB <- which(!is.na(dataObj$maxBirth[dataObj$idNoB]))
         if (length(idMaxB) > 0) {
           dataObj$idMaxB <- dataObj$idNoB[idMaxB]
@@ -1361,8 +1420,8 @@ summary.basta <- function(object, ...){
         dataObj$idMaxB <- NA
         dataObj$updMaxB <- FALSE
       }
-      if ("minDeath" %in% colnames(object)) {
-        dataObj$minDeath <- object[, "minDeath"]
+      if ("Min.Death" %in% colnames(object)) {
+        dataObj$minDeath <- object[, "Min.Death"]
         idMinD <- which(!is.na(dataObj$maxDeath[dataObj$idNoD]))
         if (length(idMinD) > 0) {
           dataObj$idMinD <- dataObj$idNoD[idMinD]
@@ -1376,8 +1435,8 @@ summary.basta <- function(object, ...){
         dataObj$idMinD <- NA
         dataObj$updMinD <- FALSE
       }
-      if ("maxDeath" %in% colnames(object)) {
-        dataObj$maxDeath <- object[, "maxDeath"]
+      if ("Max.Death" %in% colnames(object)) {
+        dataObj$maxDeath <- object[, "Max.Death"]
         idMaxD <- which(!is.na(dataObj$maxDeath[dataObj$idNoD]))
         if (length(idMaxD) > 0) {
           dataObj$idMaxD <- dataObj$idNoD[idMaxD]

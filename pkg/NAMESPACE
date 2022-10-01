@@ -1,6 +1,7 @@
 # Export user functions
 export("basta", "basta.default", "print.basta", "summary.basta", 
-       "DataCheck", "print.bastaCheckCMR", "print.bastaCheckCens", "FixCMRdata")
+       "DataCheck", "print.bastaCheckCMR", "print.bastaCheckCens", "FixCMRdata",
+       "CensusToCaptHist")
 
 # Import package snowfall
  import(snowfall)
