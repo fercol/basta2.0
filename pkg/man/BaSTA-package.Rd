@@ -1,6 +1,6 @@
-\name{BaSTA-package}
-\alias{BaSTA-package}
-\alias{BaSTA}
+\name{BaSTA2.0-package}
+\alias{BaSTA2.0-package}
+\alias{BaSTA2.0}
 
 \docType{package}
 
@@ -14,7 +14,7 @@
 
 \details{
 \tabular{ll}{
-	Package: \tab BaSTA \cr
+	Package: \tab BaSTA2.0 \cr
 	Type: \tab Package\cr
 	Version: \tab 2.0.0\cr
 	Date: \tab 2022-10-05\cr
