@@ -8,7 +8,7 @@
 # Modified by: Fernando Colchero
 
 # General Comments: 
-# -----------------
+# ----------------- #
 # - Combine packages BaSTA and BaSTA.ZIMS 
 # - Extend the CMR part of the package to allow testing the effect of 
 #   covariates in recapture probabilities (in progress).
@@ -17,7 +17,7 @@
 #   study.
 
 # List of names to change:
-# ------------------------
+# ------------------------ #
 # 1.- datObj to dataObj
 # 2.- parObj$theta$priorMu to parObj$theta$priorMean
 # 3.- parObj$gamma$priorMu to parObj$theta$priorMean
@@ -607,7 +607,7 @@ basta.default <- function(object, dataType = "CMR",
                           studyStart = NULL, studyEnd = NULL, minAge = 0,
                           covarsStruct = "fused", formulaMort = NULL, 
                           formulaRecap = NULL, recaptTrans = studyStart, 
-                          niter = 11000, burnin = 1001, thinning = 20, 
+                          niter = 22000, burnin = 2001, thinning = 40, 
                           nsim = 1, parallel = FALSE, ncpus = 2, 
                           updateJumps = TRUE, negSenescence = FALSE, ...) {
   # Create BaSTA environment:
@@ -742,7 +742,12 @@ basta.default <- function(object, dataType = "CMR",
       options(warn = -1)
       sfInit(parallel = TRUE, cpus = ncpus)
       sfExport(list = c(intVars, ".Random.seed"))
-      sfSource(file = "/Users/colchero/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
+      if (Sys.info()[4] == "ADM-130757-Mac") {
+        sfSource(file = "/Users/colchero/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
+      } else {
+        sfSource(file = "/Users/fernando/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
+      }
+      
       # sfLibrary(BaSTA)
       bastaOut <- sfClusterApplyLB(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                                    parJumps = jumpRun$jumps)
@@ -797,7 +802,6 @@ basta.default <- function(object, dataType = "CMR",
   names(bastaFinal$modelSpecs) <- c("model", "shape", "min. age", 
                                     "Covar. structure", "Categorical", 
                                     "Continuous", "DataType")
-  
   # Life table:
   bastaFinal$lifeTable <- .CalcLifeTable(bastaFinal, covObj, algObj,
                                          dataObj)
@@ -870,12 +874,12 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         prow <- npar
       } else if (trace.name == "gamma") {
         idpars <- grep("gamma", colnames(x$params))
-        if (is.null(npar)) {
+        if (!"gamma" %in% names(x$fullpar)) {
           stop("'gamma' parameters not calculated (not propHaz)", call. = FALSE)
         }
+        npar <- x$fullpar$gamma$len
         pcol <- ceiling(npar / 2)
         prow <- ceiling(npar / pcol)
-        npar <- x$fullpar$gamma$len
         
       } else if (trace.name == "lambda") {
         npar <- ifelse("lambda" %in% colnames(x$params), 1, NA)
@@ -1079,7 +1083,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         addLTCIs <- FALSE
       } else {
         lifeTab <- x$lifeTable[[nta]]$Mean
-        addLTCIs <- TRUE
+        addLTCIs <- FALSE
         lifeTabL <- x$lifeTable[[nta]]$Lower
         lifeTabU <- x$lifeTable[[nta]]$Upper
       }
@@ -1255,7 +1259,7 @@ summary.basta <- function(object, ...){
 # A.6) construct capture-recapture matrix:
 CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   # Check data
-  if(class(ID) != "character") {
+  if(!inherits(ID, "character")) {
     ID <- as.character(ID)
   } 
   if (is.numeric(d)) {
@@ -1265,7 +1269,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     } else {
       int <- d
     }
-  } else if (is.character(d) | class(d) == "Date") {
+  } else if (is.character(d) | inherits(d, "Date")) {
     if (is.character(d)) {
       d <- as.Date(d, format = dformat)
       if (length(which(is.na(d)))) {
@@ -3428,6 +3432,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric, covObj) {
+  cat("Calculating summary statistics...")
   nthin <- length(keep)
   parMat <- bastaOut[[1]]$theta[keep, ]
   fullParMat <- bastaOut[[1]]$theta
@@ -3554,6 +3559,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     modSel <- NA
     convmessage <- "Convergence not calculated due to\ninsuficcient number of simulations.\n"
   }
+  cat(" Done.\n")
   cat(convmessage)
   # Kullback-Leibler:
   kulLeib <- .CalcKulbackLeibler(coeffs, covObj, defTheta, fullParObj, 
