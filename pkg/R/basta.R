@@ -2,7 +2,7 @@
 # Functions to analyse mortality from capture-mark-recapture (CMR)
 # or from census data 
 # Name:        basta.R
-# Date:        13 JAN 2021
+# Date:        2022-10-05
 # Version:     2.0
 # Created by:  Fernando Colchero
 # Modified by: Fernando Colchero
@@ -742,13 +742,12 @@ basta.default <- function(object, dataType = "CMR",
       options(warn = -1)
       sfInit(parallel = TRUE, cpus = ncpus)
       sfExport(list = c(intVars, ".Random.seed"))
-      if (Sys.info()[4] == "ADM-130757-Mac") {
-        sfSource(file = "/Users/colchero/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
-      } else {
-        sfSource(file = "/Users/fernando/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
-      }
-      
-      # sfLibrary(BaSTA)
+      # if (Sys.info()[4] == "ADM-130757-Mac") {
+      #   sfSource(file = "/Users/colchero/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
+      # } else {
+      #   sfSource(file = "/Users/fernando/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
+      # }
+      sfLibrary(BaSTA2.0)
       bastaOut <- sfClusterApplyLB(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                                    parJumps = jumpRun$jumps)
       sfRemoveAll(hidden = TRUE)
