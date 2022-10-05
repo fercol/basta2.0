@@ -15,8 +15,8 @@ Simulated capture-mark-recapture (\code{CMR}) data for Bayesian Survival Traject
     \item{\code{birth}}{Integer times of birth or \code{NA} when unknown.}
     \item{\code{death}}{Integer times of death or \code{NA} when unknown.}
     \item{\code{Y.51 - Y.70}}{Columns of the recapture matrix}
-    \item{\code{Sex}}{Character string indicating the sex for the individual record (i.e., \dQuote{\code{f}} = female, \dQuote{\code{m}} = male)}
-    \item{\code{weight}}{Simumated body weights at birth.}
+    \item{\code{Sex}}{Character string indicating the sex for the individual record (i.e., \dQuote{\code{Female}} and \dQuote{\code{Male}})}
+    \item{\code{Weight}}{Simumated body weights at birth.}
   }
 }
 \details{
