@@ -291,17 +291,17 @@ DataCheck <- function(object, dataType = "CMR", studyStart = NULL,
   return(prbList)
 }
 
-# Print function for data check:
-print.bastaCheckCMR <- function(bastacheck) {
+# Summary function for data check:
+summary.bastaCheckCMR <- function(object, ...) {
   cat(sprintf("DATA CHECK: %s\n", Sys.time()))
   cat("================================\n")
   
-  datSumm <- bastacheck$summary
+  datSumm <- object$summary
   nchDsum <- sapply(1:length(datSumm), function(dd) {
     nch <- nchar(datSumm[[dd]])
     if (is.na(nch)) nch <- 2
     return(nch)
-    })
+  })
   maxNchDsum <- max(nchDsum)
   summCats <- c("Number of individuals", "Number with known birth year",
                 "Number with known death year", "Number with known birth\n  AND death years", "Number of recaptures", "Earliest detection year",
@@ -321,17 +321,17 @@ print.bastaCheckCMR <- function(bastacheck) {
   }
   
   cat("\nNUMBER OF PROBLEMATIC RECORDS:\n==============================\n")
-  probDescr <- bastacheck$probDescr
+  probDescr <- object$probDescr
   nchCats <- sapply(1:length(probDescr), function(dd) nchar(probDescr[dd]))
   nPrb <- sapply(1:length(probDescr), function(ipr) {
     ity <- sprintf("type%s", ipr)
-    nipr <- length(bastacheck[[ity]])
+    nipr <- length(object[[ity]])
     return(nipr)
   })
   nchPrb <- nchar(nPrb)
   tNch <- max(nchCats) + max(nchPrb) + 1
   
-  if (bastacheck$stopExec) {
+  if (object$stopExec) {
     for (ipr in 1:6) {
       catLab <- sprintf("- %s:%s%s\n", probDescr[ipr], 
                         paste(rep(" ", tNch - nchCats[ipr] - nchPrb[ipr]), 
@@ -344,47 +344,47 @@ print.bastaCheckCMR <- function(bastacheck) {
   }
 }  
 
-print.bastaCheckCens <- function(bastacheck) {
+summary.bastaCheckCens <- function(object, ...) {
   cat(sprintf("DATA CHECK: %s\n", Sys.time()))
   cat("================================\n")
   
-  if ("missCols" %in% names(bastacheck)) {
+  if ("missCols" %in% names(object)) {
     cat("Data object is missing the following columns:\n")
-    cat(sprintf("%s.\n", paste(bastacheck$missCols, collapse = ", ")))
+    cat(sprintf("%s.\n", paste(object$missCols, collapse = ", ")))
     cat("The analysis cannot be performed without these columns.")
   } else {
     cat("\nDATA SUMMARY:\n=============\n")
     # Total number of records:
-    cat(sprintf("Total number of records  : %s\n", bastacheck$n))
+    cat(sprintf("Total number of records  : %s\n", object$n))
     # Number of censored records:
-    cat(sprintf("Number censored (C)      : %s\n", bastacheck$nCens))
+    cat(sprintf("Number censored (C)      : %s\n", object$nCens))
     # Number of censored records:
-    cat(sprintf("Number uncensored (D)    : %s\n", bastacheck$nUnCens))
+    cat(sprintf("Number uncensored (D)    : %s\n", object$nUnCens))
     # Number of records with unknown birth:
-    cat(sprintf("Number with unknown birth: %s\n", bastacheck$nNoBirth))
+    cat(sprintf("Number with unknown birth: %s\n", object$nNoBirth))
     
     
     # Dates columns with NAs:
     cat("\nNAs IN DATES COLUMNS:\n")
     cat("---------------------\n")
-    nalen <- sapply(1:length(bastacheck$nas), 
+    nalen <- sapply(1:length(object$nas), 
                     function(ii) {
-                      if (bastacheck$nas[[ii]][1] != "None") {
-                        nna <- length(bastacheck$nas[[ii]])
+                      if (object$nas[[ii]][1] != "None") {
+                        nna <- length(object$nas[[ii]])
                       } else {
                         nna <- 0
                       }
                       return(nna)
                     })
-    names(nalen) <- names(bastacheck$nas)
+    names(nalen) <- names(object$nas)
     idna <- which(nalen > 0)
-    nachar <- nchar(names(bastacheck$nas))
+    nachar <- nchar(names(object$nas))
     mnach <- max(nachar)
     if (any(nalen > 0)) {
       cat("NAs found in the following dates columns:\n")
       for (ii in idna) {
-        cat(sprintf("%s:\n", names(bastacheck$nas)[ii]))
-        print(bastacheck$nas[[ii]])
+        cat(sprintf("%s:\n", names(object$nas)[ii]))
+        print(object$nas[[ii]])
         cat("\n")
       }
     } else {
@@ -395,7 +395,7 @@ print.bastaCheckCens <- function(bastacheck) {
     # Dates ranges:
     cat("\nDATES RANGES:\n")
     cat("-------------\n")
-    dtab <- bastacheck$DateRan
+    dtab <- object$DateRan
     idna <- which(is.na(dtab))
     if (length(idna) > 0) dtab[idna] <- "NANA-NA-NA"
     cat(sprintf("%s\n", paste(colnames(dtab), collapse = "\t")))
@@ -415,13 +415,13 @@ print.bastaCheckCens <- function(bastacheck) {
                 "MaxBEntr", "EntrDep")
     nchpr <- nchar(datepr)
     maxch <- max(nchpr)
-    dateslen <- sapply(idlens, function(pr) length(bastacheck[[pr]]))
-    names(dateslen) <- names(bastacheck)[idlens]
+    dateslen <- sapply(idlens, function(pr) length(object[[pr]]))
+    names(dateslen) <- names(object)[idlens]
     if (any(dateslen > 0)) {
       cat("Records with inconsistencies between dates:\n")
       for (i in which(dateslen > 0)) {
         cat(sprintf("\n%s:\n", datepr[i]))
-        print(bastacheck[[idlens[i]]])
+        print(object[[idlens[i]]])
       }
     } else {
       cat("None.\n")
@@ -430,9 +430,159 @@ print.bastaCheckCens <- function(bastacheck) {
     # Inconsistencies in Depart Type:
     cat("\nINCONSISTENCIES IN DEPARTURE TYPES:\n")
     cat("-----------------------------------\n")
-    if (length(which(!names(bastacheck$DepartType) %in% c("C", "D")))) {
+    if (length(which(!names(object$DepartType) %in% c("C", "D")))) {
       cat(sprintf("Departure type codes found: %s\n", 
-                  paste(names(bastacheck$DepartType), collapse = ", ")))
+                  paste(names(object$DepartType), collapse = ", ")))
+      cat("\nWarning: only departure types required\nare C (censored) and D (dead).")
+    } else {
+      cat("None\n")
+    }
+  }
+  
+}  
+
+# Print function for data check:
+print.bastaCheckCMR <- function(x, ...) {
+  cat(sprintf("DATA CHECK: %s\n", Sys.time()))
+  cat("================================\n")
+  
+  datSumm <- x$summary
+  nchDsum <- sapply(1:length(datSumm), function(dd) {
+    nch <- nchar(datSumm[[dd]])
+    if (is.na(nch)) nch <- 2
+    return(nch)
+  })
+  maxNchDsum <- max(nchDsum)
+  summCats <- c("Number of individuals", "Number with known birth year",
+                "Number with known death year", "Number with known birth\n  AND death years", "Number of recaptures", "Earliest detection year",
+                "Latest detection year", "Earliest birth year",
+                "Latest birth year", "Earliest death year", "Latest death year")
+  nchCats <- nchar(summCats)
+  nchCats[4] <- 15
+  maxNchCats <- max(nchCats)
+  tNch <- maxNchDsum + maxNchCats + 1
+  
+  cat("\nDATA SUMMARY:\n=============\n")
+  for (ich in 1:length(datSumm)) {
+    catLab <- sprintf("- %s:%s%s\n", summCats[ich], 
+                      paste(rep(" ", tNch - nchCats[ich] - nchDsum[ich]), 
+                            collapse = ""), datSumm[[ich]])
+    cat(catLab)
+  }
+  
+  cat("\nNUMBER OF PROBLEMATIC RECORDS:\n==============================\n")
+  probDescr <- x$probDescr
+  nchCats <- sapply(1:length(probDescr), function(dd) nchar(probDescr[dd]))
+  nPrb <- sapply(1:length(probDescr), function(ipr) {
+    ity <- sprintf("type%s", ipr)
+    nipr <- length(x[[ity]])
+    return(nipr)
+  })
+  nchPrb <- nchar(nPrb)
+  tNch <- max(nchCats) + max(nchPrb) + 1
+  
+  if (x$stopExec) {
+    for (ipr in 1:6) {
+      catLab <- sprintf("- %s:%s%s\n", probDescr[ipr], 
+                        paste(rep(" ", tNch - nchCats[ipr] - nchPrb[ipr]), 
+                              collapse = ""), nPrb[[ipr]])
+      cat(catLab)
+    }
+    cat("\nNote: you can use function FixCMRdata() to fix issues.\n\n")
+  } else {
+    cat("No problematic records detected.\n\n")
+  }
+}  
+
+print.bastaCheckCens <- function(x, ...) {
+  cat(sprintf("DATA CHECK: %s\n", Sys.time()))
+  cat("================================\n")
+  
+  if ("missCols" %in% names(x)) {
+    cat("Data object is missing the following columns:\n")
+    cat(sprintf("%s.\n", paste(x$missCols, collapse = ", ")))
+    cat("The analysis cannot be performed without these columns.")
+  } else {
+    cat("\nDATA SUMMARY:\n=============\n")
+    # Total number of records:
+    cat(sprintf("Total number of records  : %s\n", x$n))
+    # Number of censored records:
+    cat(sprintf("Number censored (C)      : %s\n", x$nCens))
+    # Number of censored records:
+    cat(sprintf("Number uncensored (D)    : %s\n", x$nUnCens))
+    # Number of records with unknown birth:
+    cat(sprintf("Number with unknown birth: %s\n", x$nNoBirth))
+    
+    
+    # Dates columns with NAs:
+    cat("\nNAs IN DATES COLUMNS:\n")
+    cat("---------------------\n")
+    nalen <- sapply(1:length(x$nas), 
+                    function(ii) {
+                      if (x$nas[[ii]][1] != "None") {
+                        nna <- length(x$nas[[ii]])
+                      } else {
+                        nna <- 0
+                      }
+                      return(nna)
+                    })
+    names(nalen) <- names(x$nas)
+    idna <- which(nalen > 0)
+    nachar <- nchar(names(x$nas))
+    mnach <- max(nachar)
+    if (any(nalen > 0)) {
+      cat("NAs found in the following dates columns:\n")
+      for (ii in idna) {
+        cat(sprintf("%s:\n", names(x$nas)[ii]))
+        print(x$nas[[ii]])
+        cat("\n")
+      }
+    } else {
+      cat("No NAs found in dates columns.\n")
+    }
+    
+    
+    # Dates ranges:
+    cat("\nDATES RANGES:\n")
+    cat("-------------\n")
+    dtab <- x$DateRan
+    idna <- which(is.na(dtab))
+    if (length(idna) > 0) dtab[idna] <- "NANA-NA-NA"
+    cat(sprintf("%s\n", paste(colnames(dtab), collapse = "\t")))
+    for(ii in 1:2) {
+      cat(sprintf("%s\n", paste(dtab[ii, ], collapse = "\t")))
+    }
+    
+    
+    # Inconsistencies in the dates columns:
+    cat("\nINCONSISTENCIES BETWEEN DATES COLUMNS:\n")
+    cat("--------------------------------------\n")
+    
+    datepr <- c("Min Birth > Birth", "Birth > Max Birth", 
+                "Min Birth > Max Birth", "Birth > Entry", "Min Birth > Entry",
+                "Max Birth > Entry", "Entry > Depart")
+    idlens <- c("MinBBirth", "BirthMaxB", "MinBMaxB", "BirthEntr", "MinBEntr",
+                "MaxBEntr", "EntrDep")
+    nchpr <- nchar(datepr)
+    maxch <- max(nchpr)
+    dateslen <- sapply(idlens, function(pr) length(x[[pr]]))
+    names(dateslen) <- names(x)[idlens]
+    if (any(dateslen > 0)) {
+      cat("Records with inconsistencies between dates:\n")
+      for (i in which(dateslen > 0)) {
+        cat(sprintf("\n%s:\n", datepr[i]))
+        print(x[[idlens[i]]])
+      }
+    } else {
+      cat("None.\n")
+    }
+    
+    # Inconsistencies in Depart Type:
+    cat("\nINCONSISTENCIES IN DEPARTURE TYPES:\n")
+    cat("-----------------------------------\n")
+    if (length(which(!names(x$DepartType) %in% c("C", "D")))) {
+      cat(sprintf("Departure type codes found: %s\n", 
+                  paste(names(x$DepartType), collapse = ", ")))
       cat("\nWarning: only departure types required\nare C (censored) and D (dead).")
     } else {
       cat("None\n")
@@ -709,10 +859,14 @@ basta.default <- function(object, dataType = "CMR",
   # ------------------------------ #
   # Likelihood:
   likeObj <- .CalcLike(dataObj, parCovObj, parObj, fullParObj, ageObj, 
-                       likeObj = NULL, ind = 1:dataObj$n)
+                       likeObj = NULL, algObj, ind = 1:dataObj$n, 
+                       .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                       .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                       .CalcCumHaz, .CalcCumHaz.numeric, .CalcCumHaz.matrix)
   
   # Priors age object:
-  priorAgeObj <- .SetPriorAgeDist(fullParObj, dataObj, covObj)
+  priorAgeObj <- .SetPriorAgeDist(fullParObj, dataObj, covObj, .CalcSurv,
+                                  .CalcSurv.numeric, .CalcSurv.matrix)
   
   # include in intVars:
   intVars <- c(intVars, "priorAgeObj")
@@ -723,7 +877,14 @@ basta.default <- function(object, dataType = "CMR",
   # ----------------------- #
   cat("\nRunning sequence to find jump SDs... ")
   Start <- Sys.time()
-  jumpRun <- .RunMCMC(1, UpdJumps = TRUE, parJumps = NA)
+  jumpRun <- .RunMCMC(1, UpdJumps = TRUE, parJumps = NA, ageObj, dataObj,
+                      parObj, fullParObj, covObj, 
+                      priorAgeObj, algObj, thinning, 
+                      .CalcMort, .CalcMort.numeric, 
+                      .CalcMort.matrix, .CalcSurv, 
+                      .CalcSurv.numeric, .CalcSurv.matrix,
+                      .CalcCumHaz, .CalcCumHaz.numeric, 
+                      .CalcCumHaz.matrix)
   End <- Sys.time()
   cat("Done\n")
   compTime <- round(as.numeric(End-Start, units = units(End - Start)), 2)
@@ -747,20 +908,38 @@ basta.default <- function(object, dataType = "CMR",
       # } else {
       #   sfSource(file = "/Users/fernando/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
       # }
-      sfLibrary(BaSTA2.0)
+      sfLibrary("BaSTA2.0", character.only = TRUE,
+      warn.conflicts = FALSE)
       bastaOut <- sfClusterApplyLB(1:nsim, .RunMCMC, UpdJumps = FALSE, 
-                                   parJumps = jumpRun$jumps)
+                                   parJumps = jumpRun$jumps, ageObj, dataObj,
+                                   parObj, fullParObj, covObj, 
+                                   priorAgeObj, algObj, thinning, 
+                                   .CalcMort, .CalcMort.numeric, 
+                                   .CalcMort.matrix, .CalcSurv, 
+                                   .CalcSurv.numeric, .CalcSurv.matrix,
+                                   .CalcCumHaz, .CalcCumHaz.numeric, 
+                                   .CalcCumHaz.matrix)
       sfRemoveAll(hidden = TRUE)
       sfStop()
       options(opp)
     } else {
       bastaOut <- lapply(1:nsim, .RunMCMC, UpdJumps = FALSE, 
-                         parJumps = jumpRun$jumps)
+                         parJumps = jumpRun$jumps, ageObj, dataObj,
+                         parObj, fullParObj, covObj, priorAgeObj, 
+                         algObj, thinning, .CalcMort, .CalcMort.numeric,
+                         .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric,
+                         .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
+                         .CalcCumHaz.matrix)
     }
   } else {
     cat("Simulation started...\n\n")
     bastaOut <- lapply(1:nsim, .RunMCMC, UpdJumps = FALSE, 
-                       parJumps = jumpRun$jumps)
+                       parJumps = jumpRun$jumps, ageObj, dataObj, parObj, 
+                       fullParObj, covObj, priorAgeObj, algObj,
+                       thinning, .CalcMort, .CalcMort.numeric,
+                       .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric,
+                       .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
+                       .CalcCumHaz.matrix)
   }
   End <- Sys.time()
   cat("Simulations finished.\n")
@@ -769,12 +948,17 @@ basta.default <- function(object, dataType = "CMR",
               units(End - Start)))
   names(bastaOut) <- paste("sim.", 1:nsim, sep = "")
   
+  # indices of kept values:
+  allKeep <- seq(1, algObj$niter, algObj$thinning)
+  keep <- which(allKeep >= algObj$burnin)
+  nKeep <- length(keep)
+  
   # Calculate summaries:
-  bastaSumars <- .ExtractParalOut(bastaOut, keep, fullParObj, covsNames, nsim,
-                                  dataObj, algObj, defTheta, .CalcMort, 
-                                  .CalcMort.numeric, .CalcMort.matrix, 
-                                  .CalcSurv, .CalcSurv.matrix, 
-                                  .CalcSurv.numeric, covObj)
+  bastaSumars <- .ExtractParalOut(bastaOut, keep, fullParObj, covObj, 
+                                  covsNames, nsim, dataObj, algObj, defTheta, 
+                                  .CalcMort, .CalcMort.numeric, 
+                                  .CalcMort.matrix, .CalcSurv, 
+                                  .CalcSurv.matrix, .CalcSurv.numeric)
   # Create final BaSTA object:
   bastaFinal <- bastaSumars
   
@@ -823,9 +1007,8 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
   if ("col" %in% names(args)) {
     Palette <- args$col
     if (length(Palette) < nv) {
-      ncwarn <- ifelse(plot.trace, "simulation", "covariates")
-      warning(sprintf("Insufficient number of colors. Not all %s will be displayed.",
-                      ncwarn), call. = FALSE)
+      warning("Insufficient number of colors. Not all traces will be displayed.",
+              call. = FALSE)
     }
   } else {
     if (nv <= 9) {
@@ -993,12 +1176,12 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         ylim <- 
           range(sapply(1:nsim, function(ii) 
             range(x$runs[[ii]][[trace.name]][, pp]))) 
-        xlim <- c(0, nrow(x$runs[[1]][[trace.name]]))
+        xlim <- c(0, x$setting["niter"])
         main <- x$fullpar[[trace.name]]$names[pp]
         plot(xlim, ylim, col = NA, xlab = "", ylab = "", 
              main = main)
         for (tt in 1:nsim) {
-          lines(keep, x$runs[[tt]][[trace.name]][keep, pp], 
+          lines(keep, x$runs[[tt]][[trace.name]][, pp], 
                 col = Palette[tt])
         }
       }
@@ -1036,7 +1219,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         }
       }
       plot(xlim, ylim, col = NA, xlab = "", ylab = demvname[demv])
-      if (minAge > 0) abline(v = minAge, lty = 2)
+      if (minAge > 0) lines(rep(minAge, 2), ylim, lty = 2)
       nn <- 0
       for (nta in 1:length(x$mort)) {
         nn <- nn + 1
@@ -1089,7 +1272,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       
       plot(xlim, ylim, col = NA, xlab = "Age", ylab = "Survival", 
            main = catname[nta])
-      if (minAge > 0) abline(v = minAge, lty = 2, col = 'orange')
+      if (minAge > 0) lines(rep(minAge, 2), ylim, lty = 2, col = 'orange')
       nn <- 0
       cuts <- x$cuts[[nta]]
       yy <- x$surv[[nta]][, cuts]
@@ -1211,7 +1394,7 @@ summary.basta <- function(object, ...){
     if ("Convergence" %in% names(object)) {
       object$convergence <- object$Convergence
     }
-    if (object$convergence[1] == "Not calculated") {
+    if (is.null(object$convergence)) {
       if (object$set['nsim'] == 1) {
         cat("\nConvergence calculations require more than one run.",
             "\nTo estimate potential scale reduction run at least",
@@ -1849,7 +2032,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   }
   defaultTheta  <- list(length = nTh, start = startTh, jump = jumpTh, 
                         priorMean = priorMean, priorSd = priorSd, name = nameTh, 
-                        low = lowTh, jitter = jitter)
+                        lower = lowTh, jitter = jitter)
   attr(defaultTheta, "model") = algObj$model
   attr(defaultTheta, "shape") = algObj$shape
   return(defaultTheta)
@@ -1860,7 +2043,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                              userPars, dataObj) {
   fullParObj <- list()
   fullParObj$theta <- list()
-  statName <- c("start", "priorMean", "priorSd", "jump", "low", "jitter")
+  statName <- c("start", "priorMean", "priorSd", "jump", "lower", "jitter")
   nstat <- length(statName)
   for (st in 1:nstat) {
     if (inherits(covObj, c("inMort", "fused"))) {
@@ -1926,7 +2109,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       allstatName <- defTheta$name
     }
   }
-  fullParObj$theta$low <- t(t(fullParObj$theta$start) * 0 + defTheta$low)
+  fullParObj$theta$lower <- t(t(fullParObj$theta$start) * 0 + defTheta$lower)
   fullParObj$theta$len <- length(fullParObj$theta$start)
   fullParObj$theta$names <- allstatName
   if (inherits(covObj, c("propHaz", "fused"))) {
@@ -1962,7 +2145,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   # Minimum age's lambda:
   if (algObj$minAge > 0) {
     fullParObj$lambda <- list(start = 0.01, priorMean = 0.01, priorSd = 1, 
-                              jump = 0.01, low = 0, jitter = 0.1,  len = 1)
+                              jump = 0.01, lower = 0, jitter = 0.1,  len = 1)
     Classes <- c(Classes, "lambda")
   } else {
     Classes <- c(Classes, "noLambda")
@@ -2105,46 +2288,6 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   p2 <- (p) * (pnorm(upper, mean, sd) - pnorm(lower, mean, sd)) + 
     pnorm(lower, mean, sd)
   q <- qnorm(p2, mean, sd)
-  return(q)
-}
-
-# Truncated Gamma:
-.rtgamma <- function(n, shape, rate = 1, scale = 1/rate, lower = -Inf, 
-                     upper = Inf) {
-  Flow <- pgamma(lower, shape, scale = scale)
-  Fup <- pgamma(upper, shape, scale = scale)
-  ru <- runif(n, Flow, Fup)
-  rx <- qgamma(ru, shape, scale = scale)
-  return(rx)
-}
-
-.dtgamma <- function(x, shape, rate = 1, scale = 1/rate, lower = -Inf, 
-                     upper = Inf, log = FALSE) {
-  Flow <- pgamma(lower, shape, scale = scale)
-  Fup <- pgamma(upper, shape, scale = scale)
-  densx <- dgamma(x, shape, scale = scale) / (Fup - Flow)
-  if (log) densx <- log(densx)
-  return(densx)
-}
-
-.ptgamma <- function(q, shape, rate = 1, scale = 1/rate, lower = -Inf, 
-                     upper = Inf, log = FALSE) {
-  p <- (pgamma(q, shape, scale = scale) - 
-          pgamma(lower, shape, scale = scale)) / 
-    (pgamma(upper, shape, scale = scale) - 
-       pgamma(lower, shape, scale = scale))
-  if (log) {
-    p <- log(p)
-  }
-  return(p)
-}
-
-.qtgamma <- function (p, shape, rate = 1, scale = 1/rate, lower = -Inf, 
-                      upper = Inf) {
-  p2 <- (p) * (pgamma(upper, shape, scale = scale) - 
-                 pgamma(lower, shape, scale = scale)) + 
-    pgamma(lower, shape, scale = scale)
-  q <- qgamma(p2, shape, scale = scale)
   return(q)
 }
 
@@ -2545,11 +2688,17 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # ------------------------------------------ #
 # Build initial likelihood object:
 .BuildLikeObj <- function(parCovObj, parObj, fullParObj, ageObj,  
-                          dataObj) {
+                          dataObj, algObj, .CalcMort, .CalcMort.numeric, 
+                          .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric, 
+                          .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
+                          .CalcCumHaz.matrix) {
   df <- data.frame(mort = rep(0, dataObj$n), ages = rep(0, dataObj$n))
   likeObj <- list(df = df, pars = c())
   likeObj <- .CalcLike(dataObj, parCovObj, parObj, fullParObj, ageObj, likeObj, 
-                       ind = 1:dataObj$n)
+                       algObj, ind = 1:dataObj$n, .CalcMort, .CalcMort.numeric, 
+                       .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric, 
+                       .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
+                       .CalcCumHaz.matrix)
 }
 
 # Likelihood function:
@@ -2608,7 +2757,11 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 
 
 .CalcLike.bastacmr <- function(dataObj, parCovObj, parObj, fullParObj, 
-                               ageObj, likeObj, ind) {
+                               ageObj, likeObj, algObj, ind, 
+                               .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                               .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                               .CalcCumHaz, .CalcCumHaz.numeric, 
+                               .CalcCumHaz.matrix) {
   # First time created:
   if (inherits(parObj, "lambda")) {
     
@@ -2660,8 +2813,11 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 .CalcLike.bastacensus <- function(dataObj, parCovObj, parObj, fullParObj, 
-                                  ageObj, likeObj, 
-                                  ind) {
+                                  ageObj, likeObj, algObj, ind, .CalcMort, 
+                                  .CalcMort.numeric, .CalcMort.matrix, 
+                                  .CalcSurv, .CalcSurv.numeric, 
+                                  .CalcSurv.matrix, .CalcCumHaz, 
+                                  .CalcCumHaz.numeric, .CalcCumHaz.matrix) {
   # First time created:
   if (inherits(parObj, "lambda")) {
     
@@ -2714,43 +2870,45 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 
 # Create initial posterior object:
 .CreatePost <- function(likeObj, fullParObj, parObj, dataObj,
-                        ageObj, covObj, priorAgeObj = NULL) {
+                        ageObj, covObj, priorAgeObj = NULL, .CalcSurv, 
+                        .CalcSurv.numeric, .CalcSurv.matrix) {
   # Create posterior list object:
   postObj <- list(priorThe = 0, priorGam = 0, priorLam = 0, postPars = 0, 
                   postAge = rep(0, dataObj$n), priorAge = rep(0, dataObj$n))
   
   # Prior for theta parameters:
-  # ---------------------------
+  # --------------------------- #
   postObj$priorThe <- sum(.dtnorm(c(parObj$theta), 
                                   c(fullParObj$theta$priorMean), 
                                   c(fullParObj$theta$priorSd), 
-                                  low = c(fullParObj$theta$low), log = TRUE))
+                                  lower = c(fullParObj$theta$lower), log = TRUE))
   
   # Prior for gamma parameters:
-  # ----------------------------
+  # ---------------------------- #
   if (inherits(parObj, "theGam")) {
     postObj$priorGam <- sum(.dtnorm(parObj$gamma, fullParObj$gamma$priorMean,
                                     fullParObj$gamma$priorSd, log = TRUE))
   } 
   
   # Prior for lambda parameter:
-  # ---------------------------
+  # --------------------------- #
   if (inherits(parObj, "lambda")) {
     postObj$priorLam <- .dtnorm(parObj$lambda, fullParObj$lambda$priorMean,
-                                fullParObj$lambda$priorSd, low = 0, 
+                                fullParObj$lambda$priorSd, lower = 0, 
                                 log = TRUE)
   } 
   
   # Posterior for all parameters:
-  # ------------------------------
+  # ----------------------------- #
   postObj$postPars <- likeObj$pars + postObj$priorThe + postObj$priorGam + 
     postObj$priorLam
   
   # Posterior for ages:
-  # -------------------
+  # ------------------- #
   if (inherits(dataObj, "bastacmr")) {
     postObj$priorAge <- .CalcPriorAgeDist(ageObj, priorAgeObj, 
-                                          ind = 1:dataObj$n)
+                                          ind = 1:dataObj$n, .CalcSurv, 
+                                          .CalcSurv.numeric, .CalcSurv.matrix)
   }
   postObj$postAge <- likeObj$df$ages + postObj$priorAge
   
@@ -2760,34 +2918,37 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # Update posterior:
 .CalcPost <- function(likeObj, fullParObj, parObj, postObj, dataObj, ageObj,
                       covObj, priorAgeObj = NULL, type = "theta", 
-                      ind = NA) {
+                      ind = NA, .CalcSurv, .CalcSurv.numeric, 
+                      .CalcSurv.matrix) {
   if (type == "theta") {
     # Theta parameters:
-    # ------------------
+    # ------------------ #
     postObj$priorThe <- sum(.dtnorm(parObj$theta, fullParObj$theta$priorMean,
                                     fullParObj$theta$priorSd, 
-                                    low = fullParObj$theta$low, log = TRUE))
+                                    lower = fullParObj$theta$lower, log = TRUE))
   } else if (type == "gamma") {
     # Gamma parameters:
-    # -----------------
+    # ----------------- #
     postObj$priorGam <- sum(.dtnorm(parObj$gamma, fullParObj$gamma$priorMean,
                                     fullParObj$gamma$priorSd, log = TRUE))
   } else if (type == "lambda") {
     # Lambda parameter:
-    # -----------------
+    # ----------------- #
     postObj$priorLam <- .dtnorm(parObj$lambda, fullParObj$lambda$priorMean,
-                                fullParObj$lambda$priorSd, low = 0, 
+                                fullParObj$lambda$priorSd, lower = 0, 
                                 log = TRUE)
   } else {
     # posterior for ages:
-    # -------------------
+    # ------------------- #
     if (inherits(dataObj, "bastacmr")) {
       postObj$priorAge[ind] <- .CalcPriorAgeDist(ageObj, priorAgeObj, 
-                                            ind = ind)
+                                            ind = ind, .CalcSurv, 
+                                            .CalcSurv.numeric, 
+                                            .CalcSurv.matrix)
     }
   }
   # Posterior for all parameters:
-  # ------------------------------
+  # ------------------------------ #
   postObj$postPars <- likeObj$pars + postObj$priorThe + postObj$priorGam + 
     postObj$priorLam
   postObj$postAge <- likeObj$df$ages + postObj$priorAge
@@ -2795,7 +2956,8 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Create object to calculate the prior age distribution:
-.SetPriorAgeDist <- function(fullParObj, dataObj, covObj) {
+.SetPriorAgeDist <- function(fullParObj, dataObj, covObj, .CalcSurv, 
+                             .CalcSurv.numeric, .CalcSurv.matrix) {
   if (inherits(dataObj, "bastacmr")) {
     dxx <- 0.001
     xx <- seq(0,100,dxx)
@@ -2821,7 +2983,8 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # function to calculate prior age distribution for basta cmr:
-.CalcPriorAgeDist <- function(ageObj, priorAgeObj, ind) {
+.CalcPriorAgeDist <- function(ageObj, priorAgeObj, ind, .CalcSurv,
+                              .CalcSurv.numeric, .CalcSurv.matrix) {
   the <- priorAgeObj$parsCov$theta[ind, ]
   gam <- priorAgeObj$parsCov$gamma[ind]
   lifeExp <- priorAgeObj$lifeExp[ind]
@@ -2832,27 +2995,28 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Calculate Hastings ratio for Metropolis-Hastings sampling:
-.CalcHastRatio <- function(pNow, pNew, parJumps, type = "theta", pp) {
+.CalcHastRatio <- function(pNow, pNew, parJumps, type = "theta", pp,
+                           fullParObj) {
   if (type == 'theta') {
     hRatio <- .dtnorm(pNow$theta[pp], pNew$theta[pp], parJumps$theta[pp], 
-                      low = fullParObj$theta$low[pp], log = TRUE) -
+                      lower = fullParObj$theta$lower[pp], log = TRUE) -
       .dtnorm(pNew$theta[pp], pNow$theta[pp], parJumps$theta[pp], 
-              low = fullParObj$theta$low[pp], log = TRUE)
+              lower = fullParObj$theta$lower[pp], log = TRUE)
   } else if (type == 'gamma') {
     if (inherits(pNow, "theGam")) {
       hRatio <- .dtnorm(pNow$gamma[pp], pNew$gamma[pp], 
                         parJumps$gamma[pp],
-                        low = fullParObj$gamma$low[pp], log = TRUE) -
+                        lower = fullParObj$gamma$lower[pp], log = TRUE) -
         .dtnorm(pNew$gamma[pp], pNow$gamma[pp], 
                 parJumps$gamma[pp],
-                low = fullParObj$gamma$low[pp], log = TRUE)
+                lower = fullParObj$gamma$lower[pp], log = TRUE)
     }
   } else {
     if (type == "lambda") {
       hRatio <- .dtnorm(pNow$lambda, pNew$lambda, parJumps$lambda, 
-                        low = fullParObj$lambda$low, log = TRUE) -
+                        lower = fullParObj$lambda$lower, log = TRUE) -
         .dtnorm(pNew$lambda, pNow$lambda, parJumps$lambda, 
-                low = fullParObj$lambda$low, log = TRUE)
+                lower = fullParObj$lambda$lower, log = TRUE)
     }
   }
   return(hRatio)
@@ -2866,12 +3030,12 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # -------------------- #
 # Jitter parameters for different starting values in the 
 # MCMC chains:
-.JitterPars <- function(parObj, fullParObj) {
+.JitterPars <- function(parObj, fullParObj, ageObj, dataObj) {
   parObjn <- parObj
   nthe <- fullParObj$theta$len
   parObjn$theta[1:nthe] <- .rtnorm(nthe, c(parObj$theta), 
                                    c(fullParObj$theta$jitter), 
-                                   low = c(fullParObj$theta$low))
+                                   lower = c(fullParObj$theta$lower))
   if (inherits(parObj,  "theGam")) {
     parObjn$gamma <- .rtnorm(fullParObj$gamma$len,
                              fullParObj$gamma$start, 
@@ -2881,7 +3045,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     parObjn$lambda <- .rtnorm(fullParObj$lambda$len, 
                               fullParObj$lambda$start, 
                               fullParObj$lambda$jitter, 
-                              lower = fullParObj$lambda$low)
+                              lower = fullParObj$lambda$lower)
   }
   if (inherits(parObj, "pi")) {
     rho2 <- fullParObj$pi$prior2 + 
@@ -2899,16 +3063,16 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   if (type == 'theta') {
     nthe <- fullParObj$theta$len
     parObjn$theta[pp] <- .rtnorm(1, parObj$theta[pp], parJumps$theta[pp], 
-                                 low = fullParObj$theta$low[pp])
+                                 lower = fullParObj$theta$lower[pp])
   } else if (type == 'gamma') {
     if (inherits(parObj, "theGam")) {
       parObjn$gamma[pp] <- .rtnorm(1, parObj$gamma[pp], parJumps$gamma[pp],
-                                   low = fullParObj$gamma$low[pp])
+                                   lower = fullParObj$gamma$lower[pp])
     }
   } else if (type == "lambda") {
     if (inherits(parObj, "lambda")) {
       parObjn$lambda <- .rtnorm(1, parObj$lambda, parJumps$lambda, 
-                                low = fullParObj$lambda$low)
+                                lower = fullParObj$lambda$lower)
     }
   } else {
     if (inherits(parObj, "pi")) {
@@ -3218,31 +3382,43 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # -------------- #
 # MCMC function:
 # -------------- #
-.RunMCMC <- function(sim, UpdJumps = TRUE, parJumps = NA) {
+.RunMCMC <- function(sim, UpdJumps = TRUE, parJumps = NA, ageObj, dataObj,
+                     parObj, fullParObj, covObj, priorAgeObj, algObj,
+                     thinning, .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                     .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                     .CalcCumHaz, .CalcCumHaz.numeric, 
+                     .CalcCumHaz.matrix) {
   # Create initial age object:
   ageNow <- ageObj
-
+  
   # Create intial parameters:
   rm(".Random.seed", envir = .GlobalEnv); runif(1)
-  parNow <- .JitterPars(parObj, fullParObj)
+  parNow <- .JitterPars(parObj, fullParObj, ageObj, dataObj)
   parCovNow <- .CalcCovPars(parObj = parNow, parCov = NULL, 
                             covObj = covObj, dataObj = dataObj, 
                             type = "both")
   likeNow <- .BuildLikeObj(parCovObj = parCovNow, parObj = parNow, 
                            fullParObj = fullParObj, ageObj = ageNow, 
-                           dataObj = dataObj)
+                           dataObj = dataObj, algObj, .CalcMort, 
+                           .CalcMort.numeric, .CalcMort.matrix, .CalcSurv,
+                           .CalcSurv.numeric, .CalcSurv.matrix, .CalcCumHaz,
+                           .CalcCumHaz.numeric, .CalcCumHaz.matrix)
   while (is.na(likeNow$pars) | likeNow$pars == -Inf) {
-    parNow <- .JitterPars(parObj, fullParObj)
+    parNow <- .JitterPars(parObj, fullParObj, ageObj, dataObj)
     parCovNow <- .CalcCovPars(parObj = parNow, parCov = NULL, 
                               covObj = covObj, dataObj = dataObj, 
                               type = "both")
-    likeNow <- .CalcLike(dataObj = dataObj, parCovObj = parCovNow, 
-                         parObj = parNow, fullParObj = fullParObj, 
-                         ageObj = ageNow, likeObj = NULL, ind = 1:dataObj$n)
+    likeNow <- .CalcLike(dataObj, parCovNow, parNow, fullParObj, 
+                         ageNow, likeObj = NULL, algObj, 
+                         ind = 1:dataObj$n,
+                         .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                         .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                         .CalcCumHaz, .CalcCumHaz.numeric, .CalcCumHaz.matrix)
   }
   postNow <- .CreatePost(likeObj = likeNow, fullParObj = fullParObj, 
                          parObj = parNow, dataObj = dataObj, ageObj = ageNow, 
-                         covObj = covObj, priorAgeObj = priorAgeObj)
+                         covObj = covObj, priorAgeObj = priorAgeObj, 
+                         .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix)
   # cat("2323, ")
   if (UpdJumps) {
     # Start jumps for Metropolis algorithm:
@@ -3268,19 +3444,26 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   } else {
     niter <- algObj$niter
     thinSeq <- seq(burnin, niter, thinning)
+    allSeq <- seq(1, niter, thinning)
+    matrows <- length(allSeq)
     
     # Create MCMC output object:
     McmcOutObj <- .CreateMCMCoutObj(fullParObj, dataObj, algObj, 
                                     parObj = parNow, ageNow, likeNow, 
                                     postNow, type = "mcmc", 
-                                    matrows = niter)
+                                    matrows = matrows)
     
     # Counter for updated ages:
     indAge <- 0
+    indPars <- 0
   }
+  # Update counter:
+  updCount <- parObj
+  for (iup in 1:length(updCount)) updCount[[iup]] <- updCount[[iup]] * 0
+  
   # cat("2358, ")
   # Start MCMC:
-  for (iter in 2:niter) {
+  for (iter in 1:niter) {
     for (tg in c("theta", 'gamma', "lambda")) {
       if (tg %in% names(fullParObj)) {
         ntg <- fullParObj[[tg]]$len
@@ -3291,18 +3474,26 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                                     covObj = covObj, dataObj = dataObj, 
                                     type = "both")
           likeNew <- .CalcLike(dataObj, parCovNew, parNew, fullParObj, ageNow, 
-                               likeObj = likeNow, ind = 1:dataObj$n)
+                               likeNow, algObj, ind = 1:dataObj$n,
+                               .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                               .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                               .CalcCumHaz, .CalcCumHaz.numeric, 
+                               .CalcCumHaz.matrix)
           postNew <- .CalcPost(likeNew, fullParObj, parNew, postNow, 
                                dataObj, ageNow, covObj, priorAgeObj, 
-                               type = tg, ind = NA)
+                               type = tg, ind = NA, .CalcSurv, 
+                               .CalcSurv.numeric, .CalcSurv.matrix)
           hRatio <- .CalcHastRatio(parNow, parNew, parJumps, type = tg,
-                                   pp)
+                                   pp, fullParObj)
           postRatio <- exp(postNew$postPars - postNow$postPars + hRatio)
           if (!is.na(postRatio) & postRatio > runif(1)) {
             parNow <- parNew
             parCovNow <- parCovNew
             likeNow <- likeNew
             postNow <- postNew
+            if (iter >= burnin) {
+              updCount[[tg]][pp] <- updCount[[tg]][pp] + 1
+            }
             if (UpdJumps & iter <= burnin) {
               jumpsUpdMat[[tg]][iter, pp] <- 1
             }
@@ -3315,26 +3506,32 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     if (inherits(dataObj, "bastacmr")) {
       parNow <- .SamplePars(parNow, parJumps, fullParObj, dataObj, 
                             ageNow, type = "pi", pp = pp)
+      if (iter >= burnin) {
+        updCount$pi <- updCount$pi + 1
+      }
+      
       likeNow <- .CalcLike(dataObj, parCovNow, parNow, fullParObj, ageNow, 
-                           likeObj = likeNow, ind = 1:dataObj$n)
+                           likeNow, algObj, ind = 1:dataObj$n,
+                           .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                           .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                           .CalcCumHaz, .CalcCumHaz.numeric, 
+                           .CalcCumHaz.matrix)
       postNow <- .CalcPost(likeNow, fullParObj, parNow, postNow, dataObj, 
                            ageNow, covObj, priorAgeObj, type = "ages", 
-                           ind = dataObj$idNoA)
+                           ind = dataObj$idNoA, .CalcSurv, .CalcSurv.numeric, 
+                           .CalcSurv.matrix)
     }
     # if (iter == 2) cat("2401, ")
-    # Fill up paramters in output object:
-    if (!UpdJumps) {
-      McmcOutObj <- .FillMCMCoutObj(McmcOutObj, parNow, dataObj, ageNow,
-                                    likeNow, postNow, iter = iter,
-                                    variables = "params",
-                                    type = "mcmc")
-    }
     
     # Sample ages:
     if (dataObj$updA) {
       ageNew <- .SampleAges(ageNow, dataObj, algObj)
       likeNew <- .CalcLike(dataObj, parCovNow, parNow, fullParObj, ageNew, 
-                           likeNow, ind = dataObj$idNoA)
+                           likeNow, algObj, ind = dataObj$idNoA,
+                           .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                           .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                           .CalcCumHaz, .CalcCumHaz.numeric, 
+                           .CalcCumHaz.matrix)
       # CHANGE 2021-08-10: Find subset of times of birth and death that 
       #                    did change.
       if (inherits(ageNew, "agecmr")) {
@@ -3348,16 +3545,20 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       }
       
       likeNew <- .CalcLike(dataObj, parCovNow, parNow, fullParObj, ageNew, 
-                           likeNow, ind = idNew)
+                           likeNow, algObj, ind = idNew,
+                           .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                           .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                           .CalcCumHaz, .CalcCumHaz.numeric, .CalcCumHaz.matrix)
       # CHANGE 2021-08-10: Replace ageObj by ageNew:
       postNew <- .CalcPost(likeNew, fullParObj, parNow, postNow, dataObj, 
                            ageNew, covObj, priorAgeObj, type = "age", 
-                           ind = idNew)
+                           ind = idNew, .CalcSurv, .CalcSurv.numeric, 
+                           .CalcSurv.matrix)
       postRatio <- exp(postNew$postAge[idNew] - 
                          postNow$postAge[idNew])
       idUpdAges <- idNew[!is.na(postRatio) & 
                            postRatio > runif(length(idNew))]
-
+      
       if (length(idUpdAges) > 0) {
         ageNow$ages[idUpdAges, ] <- ageNew$ages[idUpdAges, ]
         ageNow$inds[idUpdAges, ] <- ageNew$inds[idUpdAges, ]
@@ -3366,10 +3567,15 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         }
         # CHANGE 2021-08-10: Missed updating likelihood and posterior:
         likeNow <- .CalcLike(dataObj, parCovNow, parNow, fullParObj, ageNow, 
-                             likeNow, ind = idUpdAges)
+                             likeNow, algObj, ind = idUpdAges,
+                             .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                             .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                             .CalcCumHaz, .CalcCumHaz.numeric, 
+                             .CalcCumHaz.matrix)
         postNow <- .CalcPost(likeNow, fullParObj, parNow, postNow, dataObj, 
                              ageNow, covObj, priorAgeObj, type = "age", 
-                             ind = idUpdAges)
+                             ind = idUpdAges, .CalcSurv, .CalcSurv.numeric, 
+                             .CalcSurv.matrix)
       }
       
       # Fill up paramters in output object:
@@ -3383,15 +3589,25 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       }
     }
     # if (iter == 2) cat("2439.\n")
+    
+    # Fill up paramters, likelihood and posterior in output object:
     if (!UpdJumps) {
-      McmcOutObj <- .FillMCMCoutObj(McmcOutObj, parNow, dataObj, ageNow,
-                                    likeNow, postNow, iter = iter,
-                                    variables = "likepost", type = "mcmc")
+      if (iter %in% allSeq) {
+        indPars <- indPars + 1
+        McmcOutObj <- .FillMCMCoutObj(McmcOutObj, parNow, dataObj, ageNow,
+                                      likeNow, postNow, iter = indPars,
+                                      variables = "params",
+                                      type = "mcmc")
+        McmcOutObj <- .FillMCMCoutObj(McmcOutObj, parNow, dataObj, ageNow,
+                                      likeNow, postNow, iter = indPars,
+                                      variables = "likepost", type = "mcmc")
+        
+      }
     }
     
     # Dynamic Metropolis to update jumps sd:
     if (UpdJumps) {
-      if (iter %in% updSeq) {
+      if (iter %in% updSeq[-1]) {
         idpar <- which(updSeq == iter)
         parJumps <- .UpdateJumps(parJumps, jumpsUpdMat, iter, iterUpd, updTarg)
         # jumpsMat <- .FillMCMCoutObj(jumpsMat, parJumps, dataObj, ageNow, 
@@ -3418,6 +3634,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     }
   }
   McmcOutObj$jumps <- parJumps
+  McmcOutObj$update <- updCount
   return(McmcOutObj)
 }
 
@@ -3426,18 +3643,19 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # ===================================== #
 # Extract thinned sequences from multiple runs, calculate coefficients,
 # DIC and quantiles for mortality, survival, summary statistics and ages:
-.ExtractParalOut <- function(bastaOut, keep, fullParObj, covsNames, nsim, 
-                             dataObj, algObj, defTheta, .CalcMort, 
+.ExtractParalOut <- function(bastaOut, keep, fullParObj, covObj, covsNames, 
+                             nsim, dataObj, algObj, defTheta, .CalcMort, 
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
-                             .CalcSurv.numeric, covObj) {
+                             .CalcSurv.numeric) {
   cat("Calculating summary statistics...")
   nthin <- length(keep)
   parMat <- bastaOut[[1]]$theta[keep, ]
-  fullParMat <- bastaOut[[1]]$theta
   parnames <- fullParObj$theta$names
-  theMat <- parMat
+  idTheta <- 1:ncol(bastaOut[[1]]$theta)
   likePost <- bastaOut[[1]]$likePost[keep, ]
+  updVec <- c(bastaOut[[1]]$update$theta)
+  updTot <- (algObj$niter - algObj$burnin + 1) * algObj$nsim
   
   # Time of birth estimates:
   birthMat <- matrix(dataObj$bi, dataObj$n, nthin * algObj$nsim)
@@ -3453,17 +3671,17 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   if (covsNames$class %in% c("propHaz", "fused")) {
     parMat <- cbind(parMat, bastaOut[[1]]$gamma[keep, ])
     parnames <- c(parnames, fullParObj$gamma$names)
-    fullParMat <- cbind(fullParMat, bastaOut[[1]]$gamma)
+    updVec <- c(updVec, bastaOut[[1]]$update$gamma)
   }
   if (inherits(fullParObj, "lambda")) {
     parMat <- cbind(parMat, bastaOut[[1]]$lambda[keep])
     parnames <- c(parnames, "lambda")
-    fullParMat <- cbind(fullParMat, bastaOut[[1]]$lambda)
+    updVec <- c(updVec, bastaOut[[1]]$update$lambda)
   }
   if (inherits(fullParObj, "pi")) {
     parMat <- cbind(parMat, bastaOut[[1]]$pi[keep, ])
     parnames <- c(parnames, fullParObj$pi$names)
-    fullParMat <- cbind(fullParMat, bastaOut[[1]]$pi)
+    updVec <- c(updVec, bastaOut[[1]]$update$pi)
   }
   for (sim in 1:nsim) {
     if (dataObj$updB) {
@@ -3475,37 +3693,29 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         t(bastaOut[[sim]]$D)
     }
     if (sim > 1) {
-      if (is.matrix(theMat)) {
-        theMat <- rbind(theMat, bastaOut[[sim]]$theta[keep, ])
-      } else {
-        theMat <- c(theMat, bastaOut[[sim]]$theta[keep, ])
-      }
-      if (covsNames$class == "inMort") {
-        pmat <- bastaOut[[sim]]$theta[keep, ]
-        fullPmat <- bastaOut[[sim]]$theta
-      } else {
-        pmat <- cbind(bastaOut[[sim]]$theta[keep, ],
-                      bastaOut[[sim]]$gamma[keep, ])
-        fullPmat <- cbind(bastaOut[[sim]]$theta, bastaOut[[sim]]$gamma)
+      pmat <- bastaOut[[sim]]$theta[keep, ]
+      tempUpd <- c(bastaOut[[sim]]$update$theta)
+      if (inherits(fullParObj, "theGam")) {
+        pmat <- cbind(pmat, bastaOut[[sim]]$gamma[keep, ])
+        tempUpd <- c(tempUpd, bastaOut[[sim]]$update$gamma)
       }
       if (inherits(fullParObj, "lambda")) {
-        pmat <- cbind(pmat, bastaOut[[sim]]$lambda[keep])
-        fullPmat <- cbind(fullPmat, bastaOut[[sim]]$lambda)
+        pmat <- cbind(pmat, bastaOut[[sim]]$update$lambda[keep])
+        tempUpd <- c(tempUpd, bastaOut[[sim]]$update$lambda)
       }
       if (inherits(fullParObj, "pi")) {
         pmat <- cbind(pmat, bastaOut[[sim]]$pi[keep, ])
-        fullPmat <- cbind(fullPmat, bastaOut[[sim]]$pi)
+        tempUpd <- c(tempUpd, bastaOut[[sim]]$update$pi)
       }
       
       if (is.matrix(parMat)) {
         parMat <- rbind(parMat, pmat)
-        fullParMat <- rbind(fullParMat, fullPmat)
       } else {
         parMat <- c(parMat, pmat)
         parMat <- matrix(parMat, ncol = 1)
-        fullParMat <- c(fullParMat, fullPmat)
       }
-      likePost <- rbind(likePost, bastaOut[[sim]]$likePost[keep, ])      
+      likePost <- rbind(likePost, bastaOut[[sim]]$likePost[keep, ])
+      updVec <- updVec + tempUpd
     }
   }
   
@@ -3516,8 +3726,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                   apply(parMat, 2, 
                         function(x) cor(x[-1], x[-length(x)], 
                                         use = "complete.obs")),
-                  apply(fullParMat, 2, function(x) 
-                    length(which(diff(x) != 0)) / (length(x) -1)))
+                  updVec / updTot)
   colnames(coeffs) <- c("Mean", "StdErr", "Lower95%CI", "Upper95%CI", 
                         "SerAutocorr", "UpdateRate")
   if (nsim > 1) {
@@ -3553,10 +3762,12 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     } else {
       modSel <- NA
       convmessage <- "Convergence not reached for some parameters.\n"
+      conv <- NULL
     }
   } else {
     modSel <- NA
     convmessage <- "Convergence not calculated due to\ninsuficcient number of simulations.\n"
+    conv <- NULL
   }
   cat(" Done.\n")
   cat(convmessage)
@@ -3592,23 +3803,22 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   # Mortality, survival and density quantiles:
   maxAge <- max(ageLast)
   xv <- seq(0, maxAge * 4, length = 1000)
-  tempOut <- list(params = parMat, theta = theMat)
-  mortQuan <- .CalcDemoFunQuan(tempOut, xv, covsNames, defTheta, 
+  mortQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
                                funtype = "mort", .CalcMort, 
                                .CalcMort.numeric, .CalcMort.matrix, 
                                .CalcSurv, .CalcSurv.matrix, 
                                .CalcSurv.numeric)
-  survQuan <- .CalcDemoFunQuan(tempOut, xv, covsNames, defTheta, 
+  survQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
                                funtype = "surv", .CalcMort, 
                                .CalcMort.numeric, .CalcMort.matrix, 
                                .CalcSurv, .CalcSurv.matrix, 
                                .CalcSurv.numeric)
-  densQuan <- .CalcDemoFunQuan(tempOut, xv, covsNames, defTheta, 
+  densQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
                                funtype = "dens", .CalcMort, 
                                .CalcMort.numeric, .CalcMort.matrix, 
                                .CalcSurv, .CalcSurv.matrix, 
                                .CalcSurv.numeric)
-  PSQuan <- .CalcDemoFunQuan(tempOut, xv, covsNames, defTheta, 
+  PSQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
                              funtype = "PS", .CalcMort, 
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
@@ -3619,7 +3829,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   }
   
   # List of outputs:
-  outList <- list(params = parMat, theta = theMat, coefficients = coeffs, 
+  outList <- list(params = parMat, coefficients = coeffs, 
                   names = parnames, DIC = modSel, KullbackLeibler = kulLeib, 
                   PS = PSQuan, mort = mortQuan, surv = survQuan, 
                   dens = densQuan, x = xv, cuts = cuts, ageLast = ageLast,
@@ -3630,7 +3840,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Calculate Kulback-Leibler discrepancies between parameters:
-.CalcKulbackLeibler <- function(coef, covObj, defTheta, fullParObj, algObj,
+.CalcKulbackLeibler <- function(coeffs, covObj, defTheta, fullParObj, algObj,
                                 dataObj) {
   if (!is.null(covObj$cat) & 
       !(length(covObj$cat) == 2 & inherits(covObj, "propHaz"))) {
@@ -3638,7 +3848,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       if (inherits(covObj, c("fused", "inMort"))) {
         parNames <- defTheta$name
         nPar <- defTheta$length
-        low <- defTheta$low
+        lower <- defTheta$lower
         nCat <- length(covObj$cat)
         namesCat <- names(covObj$cat)
       } else {
@@ -3646,7 +3856,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         nCat <- length(covObj$cat) - 1
         namesCat <- names(covObj$cat)[-1]
         nPar <- 1
-        low <- -Inf
+        lower <- -Inf
       }
       nComb <- (nCat - 1)^2 - ((nCat - 1)^2 - (nCat - 1)) / 2
       covComb1 <- c()
@@ -3665,22 +3875,23 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
             for (p in 1:nPar) {
               if (inherits(covObj, c("fused", "inMort"))) {
                 idP <- sapply(c(i, j), function(ij) 
-                  which(rownames(coef) == 
+                  which(rownames(coeffs) == 
                           sprintf("%s.%s", parNames[p], namesCat[ij])))
               } else {
                 idP <- sapply(c(i, j), function(ij) 
-                  which(rownames(coef) == namesCat[ij]))
+                  which(rownames(coeffs) == namesCat[ij]))
               }
               parRan <- range(sapply(1:2, 
                                      function(pp) .qtnorm(c(0.001, 0.999), 
-                                                          coef[idP[pp], 1],
-                                                          coef[idP[pp], 2], 
-                                                          lower = low[p])))
+                                                          coeffs[idP[pp], 1],
+                                                          coeffs[idP[pp], 2], 
+                                                          lower = lower[p])))
               parVec <- seq(parRan[1], parRan[2], length = 100)
               dp <- parVec[2] - parVec[1]
               parDens <- sapply(1:2, function(pp) 
                 .dtnorm(seq(parRan[1], parRan[2], length = 100), 
-                        coef[idP[pp], 1], coef[idP[pp], 2], lower = low[p]))
+                        coeffs[idP[pp], 1], coeffs[idP[pp], 2], 
+                        lower = lower[p]))
               klMat1[p, comb] <- sum(parDens[, 1] * 
                                        log(parDens[, 1] / parDens[, 2]) * dp)
               klMat2[p, comb] <- sum(parDens[, 2] * 
@@ -3706,15 +3917,16 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Calculate survival and mortality quantiles:
-.CalcDemoFunQuan <- function(out, x, covsNames, defTheta, 
+.CalcDemoFunQuan <- function(parMat, idTheta, x, covObj, covsNames, defTheta, 
                              funtype = "mort", .CalcMort, 
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric) {
   covinf <- list(th = list(), ga = list())
   fullm <- list(th = list(), ga = list())
+  nTheta <- length(idTheta)
   if (covsNames$class == "inMort") {
-    fullm$th <- out$theta
+    fullm$th <- parMat[, idTheta]
     covinf$th$num <- ifelse(length(covsNames$cat) == 0, 0, 
                             length(covsNames$cat))
     if (is.na(covsNames$cat)[1]) {
@@ -3729,7 +3941,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     covinf$ga$canum <- 0
     covinf$ga$conum <- 0
   } else if (covsNames$class == "fused") {
-    fullm$th <- out$theta
+    fullm$th <- parMat[, idTheta]
     covinf$th$num <- ifelse(length(covsNames$cat) == 0, 0, 
                             length(covsNames$cat))
     if (is.na(covsNames$cat)[1]) {
@@ -3742,14 +3954,14 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     covinf$ga$coname <- names(covsNames$con)
     covinf$ga$conum <- length(covsNames$con)
     fullm$ga$cat <- 0
-    concol <- colnames(out$params)[(ncol(out$theta)+1):ncol(out$params)]
+    concol <- colnames(parMat)[(nTheta + 1):ncol(parMat)]
     idlambda <- grep("lambda", concol)
     if (length(idlambda) > 0) {
       concol <- concol[-idlambda]
     }
-    fullm$ga$con <- out$params[, concol]
+    fullm$ga$con <- parMat[, concol]
   } else {
-    fullm$th <- out$theta
+    fullm$th <- parMat[, idTheta]
     covinf$th$num <- 0
     covinf$th$name <- ""
     if (is.na(covsNames$cat)[1]) {
@@ -3759,12 +3971,13 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     } else {
       covinf$ga$caname <- names(covsNames$cat)
       covinf$ga$canum <- length(covsNames$cat)
-      concol <- colnames(out$params)[(ncol(out$theta)+1):ncol(out$params)]
+      concol <- colnames(parMat)[(nTheta + 1):ncol(parMat)]
       idlambda <- grep("lambda", concol)
       if (length(idlambda) > 0) {
         concol <- concol[-idlambda]
       }
-      fullm$ga$cat <- cbind(0, out$params[, covinf$ga$caname[-1]])
+      fullm$ga$cat <- cbind(0, parMat[, grep(covinf$ga$caname[-1], 
+                                             colnames(parMat))])
       colnames(fullm$ga$cat) <- covinf$ga$caname
     }
     if (is.na(covsNames$con)[1]) {
@@ -3774,14 +3987,14 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     } else {
       covinf$ga$coname <- names(covsNames$con)
       covinf$ga$conum <- length(covsNames$con)
-      fullm$ga$con <- out$params[, sprintf("gamma.%s", covinf$ga$coname)]
+      fullm$ga$con <- parMat[, sprintf("gamma.%s", covinf$ga$coname)]
     }
   }
-  idlambda <- grep("lambda", colnames(out$params))
+  idlambda <- grep("lambda", colnames(parMat))
   # if (length(idlambda) == 1) {
-  #   etav <- out$params[, idlambda]
+  #   etav <- parMat[, idlambda]
   # } else {
-  #   etav <- rep(0, nrow(out$params))
+  #   etav <- rep(0, nrow(parMat))
   # }
   demoQuan <- list()
   for (nta in covinf$th$name) {
@@ -3838,7 +4051,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
           }
           return(demf)
         })
-        demofave <- apply(demof, 1, mean)
+        demofave <- apply(demof, 1, mean, na.rm = TRUE)
         demofci <- apply(demof, 1, quantile, c(0.025, 0.975), na.rm = TRUE)
         demoffin <- rbind(demofave, demofci)
         rownames(demoffin) <- c("Mean", "2.5%", "97.5%")
@@ -3853,13 +4066,17 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         Hx <- apply(surv, 2, .CalcHx, dx = Deltax)
         Epx <- - log(Hx)
         Gx <- apply(surv, 2, .CalcGx, dx = Deltax)
-        PSq <- rbind(c(mean(Ex), quantile(Ex, c(0.025, 0.975))),
-                     c(mean(Hx), quantile(Hx, c(0.025, 0.975))),
-                     c(mean(Epx), quantile(Epx, c(0.025, 0.975), na.rm = T)),
-                     c(mean(Gx), quantile(Gx, c(0.025, 0.975))))
+        PSq <- rbind(c(mean(Ex, na.rm = TRUE), sd(Ex, na.rm = TRUE), 
+                       quantile(Ex, c(0.025, 0.975), na.rm = TRUE)),
+                     c(mean(Hx, na.rm = TRUE), sd(Hx, na.rm = TRUE), 
+                       quantile(Hx, c(0.025, 0.975), na.rm = TRUE)),
+                     c(mean(Epx, na.rm = TRUE), sd(Epx, na.rm = TRUE), 
+                       quantile(Epx, c(0.025, 0.975), na.rm = TRUE)),
+                     c(mean(Gx, na.rm = TRUE), sd(Gx, na.rm = TRUE), 
+                       quantile(Gx, c(0.025, 0.975), na.rm = TRUE)))
         dimnames(PSq) <- list(c("LifeExp", "LifeTableEntropy", "LifespanEqual",
                                 "Gini"), 
-                              c("Mean", "2.5%", "97.5%"))
+                              c("Mean", "SE", "2.5%", "97.5%"))
         demoQuan[[catname]] <- list(PS = PSq, Ex = Ex, Hx = Hx, Epx = Epx,
                                     Gx = Gx)
       }
