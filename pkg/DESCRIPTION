@@ -5,7 +5,7 @@ Version: 2.0.0
 Date: 2022-10-05
 Author: Fernando Colchero
 Maintainer: Fernando Colchero <colchero@imada.sdu.dk>
-Depends: R (>= 2.10)
+Depends: R (>= 3.5.0), snowfall
 Imports: snowfall
 Description: Estimates survival and mortality with covariates from census or capture-recapture/recovery data in a Bayesian framework when many individuals are of unknown age. It includes tools for data checking, model diagnostics and outputs such as life-tables and plots.
 License: GPL

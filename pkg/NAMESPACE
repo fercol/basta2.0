@@ -1,22 +1,25 @@
 # Export user functions
 export("basta", "basta.default", "print.basta", "summary.basta", 
-       "DataCheck", "print.bastaCheckCMR", "print.bastaCheckCens", "FixCMRdata",
+       "DataCheck", "summary.bastaCheckCMR", "summary.bastaCheckCens", 
+       "print.bastaCheckCMR", "print.bastaCheckCens", "FixCMRdata",
        "CensusToCaptHist")
 
 # Import package snowfall
- import(snowfall)
-  importFrom("grDevices", "adjustcolor", "rainbow")
-  importFrom("graphics", "axis", "layout", "legend", "lines", "mtext",
+import("snowfall")
+importFrom("grDevices", "adjustcolor", "rainbow")
+importFrom("graphics", "axis", "layout", "legend", "lines", "mtext",
              "par", "plot", "polygon")
-  importFrom("stats", "as.formula", "cor", "density", "dnorm",
+importFrom("stats", "as.formula", "cor", "density", "dnorm",
              "model.matrix", "pnorm", "qnorm", "quantile", "rbeta",
              "rnorm", "runif", "sd", "terms", "var")
-  importFrom("utils", "packageDescription")
+importFrom("utils", "packageDescription")
 
 # S3 methods for exported functions:
 S3method("basta", "default")
 S3method("print", "basta")
 S3method("summary", "basta")
 S3method("plot", "basta")
+S3method("summary", "bastaCheckCMR")
+S3method("summary", "bastaCheckCens")
 S3method("print", "bastaCheckCMR")
 S3method("print", "bastaCheckCens")
