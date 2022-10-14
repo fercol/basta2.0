@@ -1894,6 +1894,11 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       covClass[2] <- "contCov"
       covObj$cont <- covType$cont
     }
+    
+    # General covariate names:
+    genCovs <- strsplit(gsub(" - 1", "", as.character(algObj$formulaMort)[2]),
+                        "[[:blank:]]{1}[[:punct:]]{1}[[:blank:]]{1}")[[1]]
+    covObj$genCovs <- genCovs
   }
   
   # ------------------------------------- #
@@ -3855,6 +3860,12 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         parNames <- "gamma"
         nCat <- length(covObj$cat) - 1
         namesCat <- names(covObj$cat)[-1]
+        # NOTE 2022-10-14: Fixed issue with categorical covariates on propHaz.
+        covCount <- rep(0, length(covObj$genCovs))
+        for (icov in 1:length(covObj$genCovs)) {
+          idc <- grep(covObj$genCovs[icov], namesCat)
+          covCount[icov] <- length(idc)
+        }
         nPar <- 1
         lower <- -Inf
       }
@@ -3878,8 +3889,8 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                   which(rownames(coeffs) == 
                           sprintf("%s.%s", parNames[p], namesCat[ij])))
               } else {
-                idP <- sapply(c(i, j), function(ij) 
-                  which(rownames(coeffs) == namesCat[ij]))
+                idP <- sapply(c(i, j), function(ij)
+                  grep(namesCat[ij], rownames(coeffs)))
               }
               parRan <- range(sapply(1:2, 
                                      function(pp) .qtnorm(c(0.001, 0.999), 
@@ -3976,8 +3987,10 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       if (length(idlambda) > 0) {
         concol <- concol[-idlambda]
       }
-      fullm$ga$cat <- cbind(0, parMat[, grep(covinf$ga$caname[-1], 
-                                             colnames(parMat))])
+      idca <- sapply(2:covinf$ga$canum, function(ica) {
+        grep(covinf$ga$caname[ica], colnames(parMat))
+      })
+      fullm$ga$cat <- cbind(0, parMat[, idca])
       colnames(fullm$ga$cat) <- covinf$ga$caname
     }
     if (is.na(covsNames$con)[1]) {
