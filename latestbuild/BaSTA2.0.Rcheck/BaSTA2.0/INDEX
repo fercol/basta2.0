@@ -1,0 +1,24 @@
+BaSTA2.0-package        BaSTA: Parametric Bayesian estimation of
+                        age-specific survival for truncated and
+                        censored capture-recapture or census data.
+CensusToCaptHist        Constructs a capture-history matrix from
+                        repeated individual observations to be used in
+                        Bayesian Survival Trajectory Analysis (BaSTA).
+DataCheck               Error checking for BaSTA input data.
+FixCMRdata              Fix issues on CMR input data for BaSTA.
+basta                   Parametric Bayesian estimation of age-specific
+                        survival for left-truncated and right-censored
+                        capture-mark-recapture or census data.
+bastaCMRdat             Example of capture-mark-recapture data for
+                        BaSTA analysis.
+bastaCMRout             Output from a Bayesian Survival Trajectory
+                        Analysis (BaSTA) analysis on a simulated
+                        capture-mark-recapture (CMR) dataset.
+bastaCensDat            Example of census data for BaSTA analysis.
+bastaCensOut            Output from a Bayesian Survival Trajectory
+                        Analysis (BaSTA) analysis on a simulated census
+                        dataset.
+summary.basta           Summarizing and plotting Bayesian Survival
+                        Trajectory Analysis (BaSTA) model outputs.
+summary.bastaCheckCMR   Summary of outputs from the data checking
+                        function in BaSTA.

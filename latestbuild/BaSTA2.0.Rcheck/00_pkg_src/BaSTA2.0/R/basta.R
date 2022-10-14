@@ -1108,15 +1108,9 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         for (ppi in 1:length(idpp)) {
           xx <- ddlist[[ppi]]$x
           yy <- ddlist[[ppi]]$y
-          CIs <- x$coefficients[ppi, c("Lower95%CI", "Upper95%CI")]
-          idcis <- which(xx >= CIs[1] & xx <= CIs[2])
           lines(xx, yy, col = Palette[ppi])
-          polygon(c(xx[idcis], rev(xx[idcis])), 
-                  c(yy[idcis], rep(0, length(yy[idcis]))), 
+          polygon(c(xx, rev(xx)), c(yy, rep(0, length(yy))), 
                   col = adjustcolor(Palette[ppi], alpha.f = 0.25), border = NA)
-          if (grepl("gamma", colnames(x$params)[idpi])) {
-            lines(c(0, 0), ylim, col = 'grey60', lty = 1)
-          }
         }
       }
       if (x$covs$class %in% c("fused", "inMort") & trace.name == "theta") {
@@ -1900,11 +1894,6 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       covClass[2] <- "contCov"
       covObj$cont <- covType$cont
     }
-    
-    # General covariate names:
-    genCovs <- strsplit(gsub(" - 1", "", as.character(algObj$formulaMort)[2]),
-                        "[[:blank:]]{1}[[:punct:]]{1}[[:blank:]]{1}")[[1]]
-    covObj$genCovs <- genCovs
   }
   
   # ------------------------------------- #
@@ -3851,7 +3840,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Calculate Kulback-Leibler discrepancies between parameters:
-.CalcKulbackLeibler <- function(coeffs, covObj, defTheta, fullParObj, algObj,
+.CalcKulbackLeibler <- function(coef, covObj, defTheta, fullParObj, algObj,
                                 dataObj) {
   if (!is.null(covObj$cat) & 
       !(length(covObj$cat) == 2 & inherits(covObj, "propHaz"))) {
@@ -3866,12 +3855,6 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         parNames <- "gamma"
         nCat <- length(covObj$cat) - 1
         namesCat <- names(covObj$cat)[-1]
-        # NOTE 2022-10-14: Fixed issue with categorical covariates on propHaz.
-        covCount <- rep(0, length(covObj$genCovs))
-        for (icov in 1:length(covObj$genCovs)) {
-          idc <- grep(covObj$genCovs[icov], namesCat)
-          covCount[icov] <- length(idc)
-        }
         nPar <- 1
         lower <- -Inf
       }
@@ -3892,23 +3875,22 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
             for (p in 1:nPar) {
               if (inherits(covObj, c("fused", "inMort"))) {
                 idP <- sapply(c(i, j), function(ij) 
-                  which(rownames(coeffs) == 
+                  which(rownames(coef) == 
                           sprintf("%s.%s", parNames[p], namesCat[ij])))
               } else {
-                idP <- sapply(c(i, j), function(ij)
-                  grep(namesCat[ij], rownames(coeffs)))
+                idP <- sapply(c(i, j), function(ij) 
+                  which(rownames(coef) == namesCat[ij]))
               }
               parRan <- range(sapply(1:2, 
                                      function(pp) .qtnorm(c(0.001, 0.999), 
-                                                          coeffs[idP[pp], 1],
-                                                          coeffs[idP[pp], 2], 
+                                                          coef[idP[pp], 1],
+                                                          coef[idP[pp], 2], 
                                                           lower = lower[p])))
               parVec <- seq(parRan[1], parRan[2], length = 100)
               dp <- parVec[2] - parVec[1]
               parDens <- sapply(1:2, function(pp) 
                 .dtnorm(seq(parRan[1], parRan[2], length = 100), 
-                        coeffs[idP[pp], 1], coeffs[idP[pp], 2], 
-                        lower = lower[p]))
+                        coef[idP[pp], 1], coef[idP[pp], 2], lower = lower[p]))
               klMat1[p, comb] <- sum(parDens[, 1] * 
                                        log(parDens[, 1] / parDens[, 2]) * dp)
               klMat2[p, comb] <- sum(parDens[, 2] * 
@@ -3993,10 +3975,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       if (length(idlambda) > 0) {
         concol <- concol[-idlambda]
       }
-      idca <- sapply(2:covinf$ga$canum, function(ica) {
-        grep(covinf$ga$caname[ica], colnames(parMat))
-      })
-      fullm$ga$cat <- cbind(0, parMat[, idca])
+      fullm$ga$cat <- cbind(0, parMat[, covinf$ga$caname[-1]])
       colnames(fullm$ga$cat) <- covinf$ga$caname
     }
     if (is.na(covsNames$con)[1]) {
@@ -4070,7 +4049,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
           }
           return(demf)
         })
-        demofave <- apply(demof, 1, mean, na.rm = TRUE)
+        demofave <- apply(demof, 1, mean)
         demofci <- apply(demof, 1, quantile, c(0.025, 0.975), na.rm = TRUE)
         demoffin <- rbind(demofave, demofci)
         rownames(demoffin) <- c("Mean", "2.5%", "97.5%")
@@ -4085,17 +4064,13 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         Hx <- apply(surv, 2, .CalcHx, dx = Deltax)
         Epx <- - log(Hx)
         Gx <- apply(surv, 2, .CalcGx, dx = Deltax)
-        PSq <- rbind(c(mean(Ex, na.rm = TRUE), sd(Ex, na.rm = TRUE), 
-                       quantile(Ex, c(0.025, 0.975), na.rm = TRUE)),
-                     c(mean(Hx, na.rm = TRUE), sd(Hx, na.rm = TRUE), 
-                       quantile(Hx, c(0.025, 0.975), na.rm = TRUE)),
-                     c(mean(Epx, na.rm = TRUE), sd(Epx, na.rm = TRUE), 
-                       quantile(Epx, c(0.025, 0.975), na.rm = TRUE)),
-                     c(mean(Gx, na.rm = TRUE), sd(Gx, na.rm = TRUE), 
-                       quantile(Gx, c(0.025, 0.975), na.rm = TRUE)))
+        PSq <- rbind(c(mean(Ex), quantile(Ex, c(0.025, 0.975))),
+                     c(mean(Hx), quantile(Hx, c(0.025, 0.975))),
+                     c(mean(Epx), quantile(Epx, c(0.025, 0.975), na.rm = T)),
+                     c(mean(Gx), quantile(Gx, c(0.025, 0.975))))
         dimnames(PSq) <- list(c("LifeExp", "LifeTableEntropy", "LifespanEqual",
                                 "Gini"), 
-                              c("Mean", "SE", "2.5%", "97.5%"))
+                              c("Mean", "2.5%", "97.5%"))
         demoQuan[[catname]] <- list(PS = PSq, Ex = Ex, Hx = Hx, Epx = Epx,
                                     Gx = Gx)
       }

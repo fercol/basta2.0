@@ -1,0 +1,542 @@
+
+R version 4.2.1 (2022-06-23) -- "Funny-Looking Kid"
+Copyright (C) 2022 The R Foundation for Statistical Computing
+Platform: x86_64-apple-darwin17.0 (64-bit)
+
+R is free software and comes with ABSOLUTELY NO WARRANTY.
+You are welcome to redistribute it under certain conditions.
+Type 'license()' or 'licence()' for distribution details.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Type 'demo()' for some demos, 'help()' for on-line help, or
+'help.start()' for an HTML browser interface to help.
+Type 'q()' to quit R.
+
+> pkgname <- "BaSTA2.0"
+> source(file.path(R.home("share"), "R", "examples-header.R"))
+> options(warn = 1)
+> library('BaSTA2.0')
+> 
+> base::assign(".oldSearch", base::search(), pos = 'CheckExEnv')
+> base::assign(".old_wd", base::getwd(), pos = 'CheckExEnv')
+> cleanEx()
+> nameEx("CensusToCaptHist")
+> ### * CensusToCaptHist
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: CensusToCaptHist
+> ### Title: Constructs a capture-history matrix from repeated individual
+> ###   observations to be used in Bayesian Survival Trajectory Analysis
+> ###   (BaSTA).
+> ### Aliases: CensusToCaptHist
+> 
+> ### ** Examples
+> 
+> ## Create a simulated vector of repeated IDs:
+> IDvec <- sort(sample(1:5, size = 15, replace = TRUE))
+> 
+> ## Simulate dates (e.g., years) of observation per individual:
+> dVec <- rep(0, length(IDvec))
+> for(i in unique(IDvec)) {
++   svec <- which(IDvec == i)
++   dVec[svec] <- sort(sample(1990:1995, length(svec)))
++ }
+> 
+> ## Construct the capture-recapture matrix:
+> Y <- CensusToCaptHist(ID = IDvec,  d = dVec)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("DataCheck")
+> ### * DataCheck
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: DataCheck
+> ### Title: Error checking for BaSTA input data.
+> ### Aliases: DataCheck
+> ### Keywords: FILL UP
+> 
+> ### ** Examples
+> 
+> ## CMR data:
+> ## --------- #
+> ## Load data:
+> data("bastaCMRdat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
++                           studyEnd = 70)
+> 
+> ## census data:
+> ## ------------ #
+> ## Load data:
+> data("bastaCensDat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(object = bastaCensDat, dataType = "census")
+> 
+> ## Printed output:
+> ## --------------- #
+> ## Print DataCheck results:
+> print(checkedData)
+DATA CHECK: 2022-10-06 20:59:10
+================================
+
+DATA SUMMARY:
+=============
+Total number of records  : 500
+Number censored (C)      : 112
+Number uncensored (D)    : 388
+Number with unknown birth: 102
+
+NAs IN DATES COLUMNS:
+---------------------
+No NAs found in dates columns.
+
+DATES RANGES:
+-------------
+Birth.Date	Min.Birth.Date	Max.Birth.Date	Entry.Date	Depart.Date
+1955-09-13	1955-09-09	1955-09-18	1970-01-01	1970-01-28
+1989-11-15	1989-11-15	1989-11-15	1989-11-15	1990-01-01
+
+INCONSISTENCIES BETWEEN DATES COLUMNS:
+--------------------------------------
+None.
+
+INCONSISTENCIES IN DEPARTURE TYPES:
+-----------------------------------
+None
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("FixCMRdata")
+> ### * FixCMRdata
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: FixCMRdata
+> ### Title: Fix issues on CMR input data for BaSTA.
+> ### Aliases: FixCMRdata
+> 
+> ### ** Examples
+> 
+> ## Load data:
+> data("bastaCMRdat", package = "BaSTA2.0")
+> 
+> ## Fix data:
+> fixedData  <- FixCMRdata(bastaCMRdat, studyStart = 51, 
++                           studyEnd = 70, autofix = rep(1, 6))
+> 
+> 
+> 
+> cleanEx()
+> nameEx("basta")
+> ### * basta
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: basta
+> ### Title: Parametric Bayesian estimation of age-specific survival for
+> ###   left-truncated and right-censored capture-mark-recapture or census
+> ###   data.
+> ### Aliases: basta basta.default
+> ### Keywords: Methods
+> 
+> ### ** Examples
+> 
+> ## ---------- #
+> ## CMR data:
+> ## ---------- #
+> ## Load data:
+> data("bastaCMRdat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
++                           studyEnd = 70)
+> 
+> ## Run short version of BaSTA on the data:
+> out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70, niter = 100, 
++              burnin = 11, thinning = 10, updateJumps = FALSE)
+
+Running sequence to find jump SDs... Done
+Total jump SDs computing time: 27.57 secs.
+
+Simulation started...
+
+Simulations finished.
+Total MCMC computing time: 0.38 secs.
+
+Calculating summary statistics... Done.
+Convergence not calculated due to
+insuficcient number of simulations.
+Constructing life table... done.
+> 
+> ## ------------- #
+> ## Census data:
+> ## ------------- #
+> ## Load data:
+> data("bastaCensDat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(bastaCensDat, dataType = "census")
+> 
+> ## Run short version of BaSTA on the data:
+> out <- basta(bastaCensDat, dataType = "census", niter = 100, burnin = 11, 
++              thinning = 10, updateJumps = FALSE)
+
+Running sequence to find jump SDs... Done
+Total jump SDs computing time: 11.34 secs.
+
+Simulation started...
+
+Simulations finished.
+Total MCMC computing time: 0.15 secs.
+
+Calculating summary statistics... Done.
+Convergence not calculated due to
+insuficcient number of simulations.
+Constructing life table... done.
+> 
+> ## --------------------- #
+> ## Check BaSTA outputs:
+> ## --------------------- #
+> ## Print results:
+> summary(out, digits = 3)
+
+Call:
+Model             		: GO
+Shape             		: simple
+Covars. structure 		: 0
+Minimum age       		: fused
+Cat. covars.      		: 
+Cont. covars.     		:   
+
+Model settings:
+   niter   burnin thinning     nsim 
+     100       11       10        1 
+
+Mean Kullback-Leibler
+discrepancy calibration (KLDC):
+KLDC was not calculated due to insufficient number
+  of simulations to estimate convergence.
+
+Coefficients:
+     Mean StdErr Lower95%CI Upper95%CI SerAutocorr UpdateRate
+b0 -2.377 0.4233    -3.2128     -2.048       0.949      0.222
+b1  0.114 0.0479     0.0734      0.205       0.957      0.200
+
+Convergence:
+
+Convergence calculations require more than one run. 
+To estimate potential scale reduction run at least two simulations.
+
+DIC:
+DIC was not calculated due to insufficient number of simulations to estimate convergence.
+> 
+> ## Plot traces for survival parameters:
+> plot(out)
+> 
+> ## Plot posterior densities of survival parameters:
+> plot(out, densities = TRUE)
+> 
+> ## Plot survival and mortality curves:
+> plot(out, plot.type = "demorates")
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bastaCMRdat")
+> ### * bastaCMRdat
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bastaCMRdat
+> ### Title: Example of capture-mark-recapture data for BaSTA analysis.
+> ### Aliases: bastaCMRdat
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> ## Load data:
+> data("bastaCMRdat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
++                           studyEnd = 70)
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bastaCMRout")
+> ### * bastaCMRout
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bastaCMRout
+> ### Title: Output from a Bayesian Survival Trajectory Analysis (BaSTA)
+> ###   analysis on a simulated capture-mark-recapture (CMR) dataset.
+> ### Aliases: bastaCMRout
+> ### Keywords: model output
+> 
+> ### ** Examples
+> 
+> ## Load BaSTA output:
+> data("bastaCMRout", package = "BaSTA2.0")
+> 
+> ## Plot traces for survival parameters:
+> plot(bastaCMRout)
+> 
+> ## Plot posterior densities of survival parameters:
+> plot(bastaCMRout, densities = TRUE)
+> 
+> ## Plot traces for proportional hazards parameter:
+> plot(bastaCMRout, trace.name = "gamma")
+> 
+> ## Plot survival and mortality curves:
+> plot(bastaCMRout, plot.type = "demorates")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bastaCensDat")
+> ### * bastaCensDat
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bastaCensDat
+> ### Title: Example of census data for BaSTA analysis.
+> ### Aliases: bastaCensDat
+> ### Keywords: datasets
+> 
+> ### ** Examples
+> 
+> ## Load data:
+> data("bastaCensDat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(bastaCensDat, dataType = "census")
+> 
+> 
+> 
+> 
+> cleanEx()
+> nameEx("bastaCensOut")
+> ### * bastaCensOut
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: bastaCensOut
+> ### Title: Output from a Bayesian Survival Trajectory Analysis (BaSTA)
+> ###   analysis on a simulated census dataset.
+> ### Aliases: bastaCensOut
+> ### Keywords: model output
+> 
+> ### ** Examples
+> 
+> ## Load BaSTA output:
+> data("bastaCensOut", package = "BaSTA2.0")
+> 
+> ## Plot traces for survival parameters:
+> plot(bastaCensOut)
+> 
+> ## Plot posterior densities of survival parameters:
+> plot(bastaCensOut, densities = TRUE)
+> 
+> ## Plot survival and mortality curves:
+> plot(bastaCensOut, plot.type = "demorates")
+> 
+> 
+> 
+> cleanEx()
+> nameEx("summary.basta")
+> ### * summary.basta
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: summary.basta
+> ### Title: Summarizing and plotting Bayesian Survival Trajectory Analysis
+> ###   (BaSTA) model outputs.
+> ### Aliases: summary.basta print.basta plot.basta
+> 
+> ### ** Examples
+> 
+> ## Load BaSTA output:
+> data("bastaCMRout", package = "BaSTA2.0")
+> 
+> ## Print summary output:
+> summary(bastaCMRout)
+
+Call:
+Model             		: GO
+Shape             		: simple
+Covars. structure 		: 0
+Minimum age       		: fused
+Cat. covars.      		: SexFemale, SexMale
+Cont. covars.     		:  Weight 
+
+Model settings:
+   niter   burnin thinning     nsim 
+   25000     5001      100        4 
+
+Mean Kullback-Leibler
+discrepancy calibration (KLDC):
+                        b0     b1
+SexMale - SexFemale 0.9921 0.9848
+
+Coefficients:
+                Mean  StdErr Lower95%CI Upper95%CI SerAutocorr UpdateRate
+b0.SexFemale -3.5816 0.20758   -4.00638    -3.2052     0.38888     0.2488
+b0.SexMale   -3.0277 0.16761   -3.34660    -2.7240     0.20315     0.2430
+b1.SexFemale  0.1317 0.01997    0.09392     0.1757     0.52227     0.2651
+b1.SexMale    0.1858 0.02087    0.14706     0.2263     0.20604     0.2576
+gamma.Weight  0.3702 0.07056    0.23926     0.5087     0.24754     0.2589
+pi            0.6109 0.01023    0.59086     0.6316     0.03942     1.0000
+             PotScaleReduc
+b0.SexFemale        1.0022
+b0.SexMale          1.0021
+b1.SexFemale        1.0023
+b1.SexMale          0.9989
+gamma.Weight        1.0032
+pi                  0.9982
+
+Convergence:
+Appropriate convergence reached for all parameters.
+
+DIC:
+3215.32 
+> 
+> ## Plot traces for mortality parameters (theta):
+> plot(bastaCMRout)
+> 
+> ## Plot traces for proportional hazards parameters (gamma):
+> plot(bastaCMRout, trace.name = "gamma")
+> 
+> ## Plot traces for recapture probability(ies) (pi):
+> plot(bastaCMRout, trace.name = "pi")
+> 
+> ## Plot predicted mortality and survival:
+> plot(bastaCMRout, plot.type = "demorates")
+> 
+> ## Change the color for each covariate on 
+> ## the predicted vital rates:
+> plot(bastaCMRout, plot.type = "demorates", 
++      col = c("dark green", "dark blue"))
+> 
+> ## Change the color and the legend text:
+> plot(bastaCMRout, plot.type = "demorates", 
++      col = c("dark green", "dark blue"),
++      names.legend = c("Females", "Males"))
+> 
+> ## Plot predicted mortality and survival 
+> ## between 2 and 8 years of age:
+> plot(bastaCMRout, plot.trace = FALSE, xlim = c(2, 8))
+> 
+> ## Plot predicted mortality and survival 
+> ## between 2 and 8 years of age without
+> ## credible intervals:
+> plot(bastaCMRout, plot.trace = FALSE, xlim = c(2, 8), 
++      noCI = TRUE)
+> 
+> ## Plot parameter densities and predicted vital  
+> ## rates in the same plot (i.e. fancy):
+> plot(bastaCMRout, fancy = TRUE)
+> 
+> ## Change colors and legend names for the 
+> ## "fancy" plot:
+> plot(bastaCMRout, fancy = TRUE, col = c("dark green", "dark blue"),
++      names.legend = c("Females", "Males"))
+Warning: Insufficient number of colors. Not all traces will be displayed.
+> 
+> 
+> 
+> cleanEx()
+> nameEx("summary.bastaCheckCMR")
+> ### * summary.bastaCheckCMR
+> 
+> flush(stderr()); flush(stdout())
+> 
+> ### Name: summary.bastaCheckCMR
+> ### Title: Summary of outputs from the data checking function in BaSTA.
+> ### Aliases: summary.bastaCheckCMR summary.bastaCheckCens
+> ###   print.bastaCheckCMR print.bastaCheckCens
+> ### Keywords: FILL UP
+> 
+> ### ** Examples
+> 
+> ## CMR data:
+> ## --------- #
+> ## Load data:
+> data("bastaCMRdat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
++                           studyEnd = 70)
+> 
+> ## census data:
+> ## ------------ #
+> ## Load data:
+> data("bastaCensDat", package = "BaSTA2.0")
+> 
+> ## Check data consistency:
+> checkedData  <- DataCheck(object = bastaCensDat, dataType = "census")
+> 
+> ## Printed output:
+> ## --------------- #
+> ## Print DataCheck results:
+> print(checkedData)
+DATA CHECK: 2022-10-06 20:59:54
+================================
+
+DATA SUMMARY:
+=============
+Total number of records  : 500
+Number censored (C)      : 112
+Number uncensored (D)    : 388
+Number with unknown birth: 102
+
+NAs IN DATES COLUMNS:
+---------------------
+No NAs found in dates columns.
+
+DATES RANGES:
+-------------
+Birth.Date	Min.Birth.Date	Max.Birth.Date	Entry.Date	Depart.Date
+1955-09-13	1955-09-09	1955-09-18	1970-01-01	1970-01-28
+1989-11-15	1989-11-15	1989-11-15	1989-11-15	1990-01-01
+
+INCONSISTENCIES BETWEEN DATES COLUMNS:
+--------------------------------------
+None.
+
+INCONSISTENCIES IN DEPARTURE TYPES:
+-----------------------------------
+None
+> 
+> 
+> 
+> ### * <FOOTER>
+> ###
+> cleanEx()
+> options(digits = 7L)
+> base::cat("Time elapsed: ", proc.time() - base::get("ptime", pos = 'CheckExEnv'),"\n")
+Time elapsed:  41.624 1.905 43.68 0.002 0.003 
+> grDevices::dev.off()
+null device 
+          1 
+> ###
+> ### Local variables: ***
+> ### mode: outline-minor ***
+> ### outline-regexp: "\\(> \\)?### [*]+" ***
+> ### End: ***
+> quit('no')
