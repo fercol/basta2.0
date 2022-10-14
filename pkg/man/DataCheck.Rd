@@ -82,7 +82,7 @@ The input data \code{object} requires at least five dates columns, namely \dQuot
 ## CMR data:
 ## --------- #
 ## Load data:
-data("bastaCMRdat", package = "BaSTA")
+data("bastaCMRdat", package = "BaSTA2.0")
 
 ## Check data consistency:
 checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
@@ -91,7 +91,7 @@ checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51,
 ## census data:
 ## ------------ #
 ## Load data:
-data("bastaCensDat", package = "BaSTA")
+data("bastaCensDat", package = "BaSTA2.0")
 
 ## Check data consistency:
 checkedData  <- DataCheck(object = bastaCensDat, dataType = "census")

@@ -17,8 +17,8 @@ basta(object, \dots)
 \method{basta}{default} (object, dataType = "CMR", model = "GO", 
   shape = "simple",  studyStart = NULL, studyEnd = NULL, 
   minAge = 0, covarsStruct = "fused",  formulaMort = NULL, 
-  formulaRecap = NULL, recaptTrans = studyStart,  niter = 11000, 
-  burnin = 1001, thinning = 20, nsim = 1, parallel = FALSE,  
+  formulaRecap = NULL, recaptTrans = studyStart,  niter = 22000, 
+  burnin = 2001, thinning = 40, nsim = 1, parallel = FALSE,  
   ncpus = 2, updateJumps = TRUE, negSenescence = FALSE,  \dots)
 }
 
@@ -59,7 +59,7 @@ basta(object, \dots)
 
 	\item{updateJumps }{A logical argument indicating wheter to update jump standard deviations (adaptive independent Metropolis) until an update rate of 0.25 is achieved (see \code{details}). }
 
-	\item{negSenescence }{Logical indicating if negative senescence should be allowed, only applicable for \code{model = \dQuote{GO}} and \code{shape = \dQuote{Makeham}}.}
+	\item{negSenescence }{Logical indicating if negative senescence should be allowed, only applicable for \code{model} = \dQuote{\code{GO}} and \code{shape} = \dQuote{\code{Makeham}}.}
 
 	\item{\dots }{Additional arguments to be passed to function \code{basta} (see \code{details})}
 
@@ -72,11 +72,11 @@ The input \code{object} required by BaSTA needs to be constructed differently wh
 
 \code{a) capture-mark-recapture (CMR):}
 
-If \code{dataType = \dQuote{CMR}}, then the data frame requires the following structure. The first column is a vector of individual unique IDs, the second and third columns are birth and death years respectively. Columns \eqn{4, \dots, T+3} represent the observation window (i.e., recapture matrix) of \eqn{T} years. This is followed (optionally) by columns for categorical and continuous covariates (see \code{\link{bastaCMRdat}} for a CMR dataset example).
+If \code{dataType} = \dQuote{\code{CMR}}, then the data frame requires the following structure. The first column is a vector of individual unique IDs, the second and third columns are birth and death years respectively. Columns \eqn{4, \dots, T+3} represent the observation window (i.e., recapture matrix) of \eqn{T} years. This is followed (optionally) by columns for categorical and continuous covariates (see \code{\link{bastaCMRdat}} for a CMR dataset example).
 
 \code{b) Census:}
 
-If \code{dataType = \dQuote{census}}, then the input data \code{object} requires at least five dates columns, namely \dQuote{Birth.Date}, \dQuote{Min.Birth.Date}, \dQuote{Max.Birth.Date}, \dQuote{Entry.Date}, and \dQuote{Depart.Date}. All dates need to be format as \dQuote{\%Y-\%m-\%d}. In addition, a \dQuote{Depart.Type} column is required with two types of departures \dQuote{C} for Censored and \dQuote{D} for dead (see \code{\link{bastaCensDat}} for a census dataset example).
+If \code{dataType} = \dQuote{\code{census}}, then the input data \code{object} requires at least five dates columns, namely \dQuote{Birth.Date}, \dQuote{Min.Birth.Date}, \dQuote{Max.Birth.Date}, \dQuote{Entry.Date}, and \dQuote{Depart.Date}. All dates need to be format as \dQuote{\%Y-\%m-\%d}. In addition, a \dQuote{Depart.Type} column is required with two types of departures \dQuote{C} for Censored and \dQuote{D} for dead (see \code{\link{bastaCensDat}} for a census dataset example).
 
 
 \code{2) INFERENCE ON AGE-SPECIFIC MORTALITY:}
@@ -161,7 +161,7 @@ As described above, the number of parameters for \code{gammaStart}, \code{gammaJ
 
 \item{mort }{If requested or called by functions \code{plot} or \code{\link{plot.basta}} median and 95\% predictive intervals for the estimated mortality rates separated by categorical covariate and calculated at the mean for each continuous covariate, if provided.}
 
-\item{surv }{If requested or called by functions \code{plot} or \code{\link{plot.bastaZIMS}} median and 95\% predictive intervals for the estimated survival probability, separated by categorical covariate and calculated at the mean for each continuous covariate, if provided.}
+\item{surv }{If requested or called by functions \code{plot} or \code{\link{plot.basta}} median and 95\% predictive intervals for the estimated survival probability, separated by categorical covariate and calculated at the mean for each continuous covariate, if provided.}
 
 \item{dens }{If requested, median and 95\% predictive intervals for the estimated probability density function of ages at death, separated by categorical covariate and calculated at the mean for each continuous covariate, if provided.}
 
@@ -187,7 +187,7 @@ As described above, the number of parameters for \code{gammaStart}, \code{gammaJ
 
 \item{modelSpecs }{Model specifications inidicating the \code{model}, the \code{shape}, the covariate structure and the minimum age that were specified by the user.}
 	
-\item{lifeTable }{A period life table calculated from the estimated times of birth (and death for \code{\dQuote{CMR}}) accounting for truncation and censoring.}
+\item{lifeTable }{A period life table calculated from the estimated times of birth (and death for \dQuote{\code{CMR}}) accounting for truncation and censoring.}
 }
 
 \references{
@@ -231,28 +231,28 @@ Spiegelhalter, D.J., Best, N.G., Carlin, B.P. and van der Linde, A. (2002) Bayes
 ## CMR data:
 ## ---------- #
 ## Load data:
-data("bastaCMRdat", package = "BaSTA")
+data("bastaCMRdat", package = "BaSTA2.0")
 
 ## Check data consistency:
 checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
                           studyEnd = 70)
 
 ## Run short version of BaSTA on the data:
-out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70, niter = 200, 
+out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70, niter = 100, 
              burnin = 11, thinning = 10, updateJumps = FALSE)
 
 ## ------------- #
 ## Census data:
 ## ------------- #
 ## Load data:
-data("bastaCensDat", package = "BaSTA")
+data("bastaCensDat", package = "BaSTA2.0")
 
 ## Check data consistency:
 checkedData  <- DataCheck(bastaCensDat, dataType = "census")
 
 ## Run short version of BaSTA on the data:
-out <- basta(bastaCensDat, niter = 200, burnin = 11, thinning = 10, 
-             updateJumps = FALSE)
+out <- basta(bastaCensDat, dataType = "census", niter = 100, burnin = 11, 
+             thinning = 10, updateJumps = FALSE)
 
 ## --------------------- #
 ## Check BaSTA outputs:
@@ -265,9 +265,6 @@ plot(out)
 
 ## Plot posterior densities of survival parameters:
 plot(out, densities = TRUE)
-
-## Plot traces for proportional hazards parameter:
-plot(out, trace.name = "gamma")
 
 ## Plot survival and mortality curves:
 plot(out, plot.type = "demorates")

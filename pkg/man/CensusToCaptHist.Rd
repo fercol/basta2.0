@@ -4,6 +4,7 @@
 \title{
 Constructs a capture-history matrix from repeated individual observations to be used in Bayesian Survival Trajectory Analysis (BaSTA).
 }
+
 \description{
 This function takes a table of repeated observations per individual (e.g., discrete interval census), consisting of a pair of vectors with ID and observation date (e.g., year), and converts it into a capture-history matrix to be used as part of a BaSTA CMR data input.
 }
@@ -41,8 +42,8 @@ IDvec <- sort(sample(1:5, size = 15, replace = TRUE))
 
 ## Simulate dates (e.g., years) of observation per individual:
 dVec <- rep(0, length(IDvec))
-for(i in unique(id.vec)) {
-  svec <- which(id.vec == i)
+for(i in unique(IDvec)) {
+  svec <- which(IDvec == i)
   dVec[svec] <- sort(sample(1990:1995, length(svec)))
 }
 
