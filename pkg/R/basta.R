@@ -1114,7 +1114,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
           polygon(c(xx[idcis], rev(xx[idcis])), 
                   c(yy[idcis], rep(0, length(yy[idcis]))), 
                   col = adjustcolor(Palette[ppi], alpha.f = 0.25), border = NA)
-          if (grepl("gamma", colnames(x$params)[idpi])) {
+          if (grepl("gamma", colnames(x$params)[ppi])) {
             lines(c(0, 0), ylim, col = 'grey60', lty = 1)
           }
         }
