@@ -4232,7 +4232,6 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                   by = dx)
       nage <- length(agev)
       
-      # Outputs:
       Nx <- Dx <- ax <- rep(0, nage)
       for (ix in 1:nage) {
         # A) EXPOSURES:
@@ -4246,45 +4245,26 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         dt <- departType[idNx]
         
         # Index for individuals dying within interval:
-        idDx <- which(xl < agev[ix] + 1 & dt == "D")
+        idDx <- which(xl < agev[ix] + dx & dt == "D")
         
         # Index of truncated in interval:
         idtr <- which(xf >= agev[ix])
         
         # Index of censored in the interval:
-        idce <- which(xl < agev[ix] + 1 & dt == "C")
+        idce <- which(xl < agev[ix] + dx & dt == "C")
         
         # Porportion lived within interval:
         intr <- rep(0, nin)
-        ince <- rep(1, nin)
+        ince <- rep(dx, nin)
         intr[idtr] <- xf[idtr] - agev[ix]
-        ince[idce] <- agev[ix] + 1 - xl[idce]
-        lived <- ince - intr
+        ince[idce] <- agev[ix] + dx - xl[idce]
+        lived <- (ince - intr) / dx
         
         # Fill in Nx:
         Nx[ix] <- sum(lived)
         
         # Fill in Dx:
         Dx[ix] <- length(idDx)
-        
-        # # proportion of truncation in interval:
-        # trp <- xf - agev[ix]
-        # trp[trp < 0] <- 0
-        # 
-        # # proportion of censoring:
-        # cep <- agev[ix] + dx - xl
-        # cep[cep < 0] <- 0
-        # cep[dt == "D"] <- 0
-        # 
-        # # Calculate exposures:
-        # nexp <- 1 - trp - cep
-        # Nx[ix] <- sum(nexp)
-        # 
-        # # B) DEATHS:
-        # # Calculate total deaths in the interval:
-        # idDx <- which(dt == "D" & xl < agev[ix] + dx)
-        # Dx[ix] <- length(idDx)
-        # # Dx[ix] <- sum(nexp[idDx])
         
         # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
         if (Dx[ix] > 1) {
@@ -4304,13 +4284,9 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       
       # Survivorship (or cumulative survival):
       lx <- c(1, cumprod(px))[1:nage]
-      # lx <- Nx / n
       
       # Number of individual years lived within the interval:
       Lx <- lx * (1 - ax * qx)
-      # Note: correction on the calculation of Lx (doesn't work when
-      #       there are censored and truncated records)
-      # Lx <- Nx - Dx * ax
       Lx[is.na(Lx)] <- 0
       
       # Total number of individual years lived after age x:
