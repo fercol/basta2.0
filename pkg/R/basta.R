@@ -1108,13 +1108,13 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         for (ppi in 1:length(idpp)) {
           xx <- ddlist[[ppi]]$x
           yy <- ddlist[[ppi]]$y
-          CIs <- x$coefficients[ppi, c("Lower95%CI", "Upper95%CI")]
+          CIs <- unlist(x$coefficients[idpp[ppi], c("Lower95%CI", "Upper95%CI")])
           idcis <- which(xx >= CIs[1] & xx <= CIs[2])
           lines(xx, yy, col = Palette[ppi])
           polygon(c(xx[idcis], rev(xx[idcis])), 
                   c(yy[idcis], rep(0, length(yy[idcis]))), 
                   col = adjustcolor(Palette[ppi], alpha.f = 0.25), border = NA)
-          if (grepl("gamma", colnames(x$params)[ppi])) {
+          if (grepl("gamma", colnames(x$params)[idpp[ppi]])) {
             lines(c(0, 0), ylim, col = 'grey60', lty = 1)
           }
         }
@@ -2400,24 +2400,20 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     if (algObj$shape == "simple") {
       mortfun <- function(theta, x) {
         mu <- theta["b0"] * theta["b1"]^theta["b0"] * 
-          x^(theta["b0"] - 1)
-        id0 <- which(x == 0)
-        if (length(id0) > 0) mu[id0] <- min(mu[-id0])
+          (x + 0.003)^(theta["b0"] - 1)
         return(mu)
       }
     } else if (algObj$shape == "Makeham") {
       mortfun <- function(theta, x) {
         mu <- theta["c"] + theta["b0"] * theta["b1"]^theta["b0"] * 
-          x^(theta["b0"] - 1)
-        id0 <- which(x == 0)
-        if (length(id0) > 0) mu[id0] <- theta["c"]
+          (x + 0.003)^(theta["b0"] - 1)
         return(mu)
       }
     } else {
       mortfun <- function(theta, x) {
         mu <- exp(theta["a0"] - theta["a1"] * x) + theta["c"] + 
           theta["b0"] * theta["b1"]^theta["b0"] * 
-          x^(theta["b0"] - 1)
+          (x + 0.003)^(theta["b0"] - 1)
         id0 <- which(x == 0)
         if (length(id0) > 0) {
           mu[id0] <- exp(theta["a0"]) + theta["c"]
@@ -2538,7 +2534,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     if (algObj$shape == "simple") {
       cumhazfun <- function(theta, x) {
         (theta["b1"] * x)^theta["b0"]
-      }      
+      }
     } else if (algObj$shape == "Makeham") {
       cumhazfun <- function(theta, x) {
         theta["c"] * x + (theta["b1"] * x)^theta["b0"]
@@ -4238,41 +4234,64 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       
       # Outputs:
       Nx <- Dx <- ax <- rep(0, nage)
-      for (xx in 1:nage) {
+      for (ix in 1:nage) {
         # A) EXPOSURES:
         # Find how many entered the interval (including truncated):
-        idNx <- which(ageFirst < agev[xx] + dx & ageLast >= agev[xx])
+        idNx <- which(ageFirst < agev[ix] + dx & ageLast >= agev[ix])
+        nin <- length(idNx)
         
         # Extract ages and departType:
         xf <- ageFirst[idNx]
         xl <- ageLast[idNx]
-        dt <- depType[idNx]
+        dt <- departType[idNx]
         
-        # proportion of truncation in interval:
-        trp <- xf - agev[xx]
-        trp[trp < 0] <- 0
+        # Index for individuals dying within interval:
+        idDx <- which(xl < agev[ix] + 1 & dt == "D")
         
-        # proportion of censoring:
-        cep <- agev[xx] + dx - xl
-        cep[cep < 0] <- 0
-        cep[dt == "D"] <- 0
+        # Index of truncated in interval:
+        idtr <- which(xf >= agev[ix])
         
-        # Calculate exposures:
-        nexp <- 1 - trp - cep
-        Nx[xx] <- sum(nexp)
+        # Index of censored in the interval:
+        idce <- which(xl < agev[ix] + 1 & dt == "C")
         
-        # B) DEATHS:
-        # Calculate total deaths in the interval:
-        idDx <- which(dt == "D" & xl < agev[xx] + dx)
-        # Dx[xx] <- length(idDx)
-        Dx[xx] <- sum(nexp[idDx])
+        # Porportion lived within interval:
+        intr <- rep(0, nin)
+        ince <- rep(1, nin)
+        intr[idtr] <- xf[idtr] - agev[ix]
+        ince[idce] <- agev[ix] + 1 - xl[idce]
+        lived <- ince - intr
+        
+        # Fill in Nx:
+        Nx[ix] <- sum(lived)
+        
+        # Fill in Dx:
+        Dx[ix] <- length(idDx)
+        
+        # # proportion of truncation in interval:
+        # trp <- xf - agev[ix]
+        # trp[trp < 0] <- 0
+        # 
+        # # proportion of censoring:
+        # cep <- agev[ix] + dx - xl
+        # cep[cep < 0] <- 0
+        # cep[dt == "D"] <- 0
+        # 
+        # # Calculate exposures:
+        # nexp <- 1 - trp - cep
+        # Nx[ix] <- sum(nexp)
+        # 
+        # # B) DEATHS:
+        # # Calculate total deaths in the interval:
+        # idDx <- which(dt == "D" & xl < agev[ix] + dx)
+        # Dx[ix] <- length(idDx)
+        # # Dx[ix] <- sum(nexp[idDx])
         
         # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
-        if (Dx[xx] > 1) {
-          ylived <- xl[idDx] - agev[xx]
-          ax[xx] <- sum(ylived) / Dx[xx]
+        if (Dx[ix] > 1) {
+          ylived <- xl[idDx] - agev[ix]
+          ax[ix] <- sum(ylived) / Dx[ix]
         } else {
-          ax[xx] <- 0
+          ax[ix] <- 0
         }
       }
       
