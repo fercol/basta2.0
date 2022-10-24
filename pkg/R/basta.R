@@ -3707,7 +3707,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         tempUpd <- c(tempUpd, bastaOut[[sim]]$update$gamma)
       }
       if (inherits(fullParObj, "lambda")) {
-        pmat <- cbind(pmat, bastaOut[[sim]]$update$lambda[keep])
+        pmat <- cbind(pmat, bastaOut[[sim]]$lambda[keep])
         tempUpd <- c(tempUpd, bastaOut[[sim]]$update$lambda)
       }
       if (inherits(fullParObj, "pi")) {
@@ -4240,24 +4240,24 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         nin <- length(idNx)
         
         # Extract ages and departType:
-        xf <- ageFirst[idNx]
-        xl <- ageLast[idNx]
-        dt <- departType[idNx]
+        xFirst <- ageFirst[idNx]
+        xLast <- ageLast[idNx]
+        dType <- departType[idNx]
         
         # Index for individuals dying within interval:
-        idDx <- which(xl < agev[ix] + dx & dt == "D")
+        idDx <- which(xLast < agev[ix] + dx & dType == "D")
         
         # Index of truncated in interval:
-        idtr <- which(xf >= agev[ix])
+        idtr <- which(xFirst >= agev[ix])
         
         # Index of censored in the interval:
-        idce <- which(xl < agev[ix] + dx & dt == "C")
+        idce <- which(xLast < agev[ix] + dx & dType == "C")
         
         # Porportion lived within interval:
         intr <- rep(0, nin)
         ince <- rep(dx, nin)
-        intr[idtr] <- xf[idtr] - agev[ix]
-        ince[idce] <- agev[ix] + dx - xl[idce]
+        intr[idtr] <- xFirst[idtr] - agev[ix]
+        ince[idce] <- xLast[idce] - agev[ix]
         lived <- (ince - intr) / dx
         
         # Fill in Nx:
@@ -4268,7 +4268,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         
         # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
         if (Dx[ix] > 1) {
-          ylived <- xl[idDx] - agev[ix]
+          ylived <- xLast[idDx] - agev[ix]
           ax[ix] <- sum(ylived) / Dx[ix]
         } else {
           ax[ix] <- 0
