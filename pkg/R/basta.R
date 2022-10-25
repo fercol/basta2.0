@@ -1000,7 +1000,17 @@ basta.default <- function(object, dataType = "CMR",
 # A.3) plotting BaSTA outputs:
 # ---------------------------- #
 plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
-                       densities = FALSE, noCIs = FALSE, ...) {
+                       densities = FALSE, noCIs = FALSE, minSurv = NULL, ...) {
+  # Wrong plot.type:
+  if (!plot.type %in% c("traces", "demorates", "gof")) {
+    stop("Wrong value for argument 'plot.type'.\nAlternatives are 'traces', 'demorates', or 'gof'.")
+  }
+  
+  # Wrong trace.name:
+  if (!plot.type %in% c("traces", "demorates", "gof")) {
+    stop("Wrong value for argument 'plot.type'.\nAlternatives are 'traces', 'demorates', or 'gof'.")
+  }
+  
   args <- list(...)
   nv <- ifelse(plot.type == "traces", x$settings['nsim'], length(x$surv))
   
@@ -1056,21 +1066,24 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         prow <- npar
       } else if (trace.name == "gamma") {
         idpars <- grep("gamma", colnames(x$params))
-        if (!"gamma" %in% names(x$fullpar)) {
-          stop("'gamma' parameters not calculated (not propHaz)", call. = FALSE)
+        if (inherits(bastaFinal$fullpar, "theta")) {
+          stop("'gamma' parameters not calculated (not propHaz).", 
+               call. = FALSE)
+        } else {
+          npar <- x$fullpar$gamma$len
+          pcol <- ceiling(npar / 2)
+          prow <- ceiling(npar / pcol)
         }
-        npar <- x$fullpar$gamma$len
-        pcol <- ceiling(npar / 2)
-        prow <- ceiling(npar / pcol)
-        
       } else if (trace.name == "lambda") {
-        npar <- ifelse("lambda" %in% colnames(x$params), 1, NA)
-        if (is.na(npar)) {
-          stop("'lambda' parameters not calculated (no minAge)", call. = FALSE)
+        if (inherits(x$fullpar, "noLambda")) {
+          stop("'lambda' parameters not calculated (no minAge).", 
+               call. = FALSE)
+        } else {
+          pcol <- 1
+          prow <- 1
+          idpars <- grep("lambda", colnames(x$params))
+          npar <- 1
         }
-        pcol <- 1
-        prow <- 1
-        idpars <- grep("lambda", colnames(x$params))
       } else if (trace.name == "pi") {
         if (x$modelSpecs["DataType"] == "CMR") {
           pcol <- ceiling(npar / 2)
@@ -1217,7 +1230,11 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       minAge <- as.numeric(x$modelSpecs["min. age"])
       for (nta in 1:length(x$mort)) {
-        cuts <- x$cuts[[nta]]
+        if (is.null(minSurv)) {
+          cuts <- x$cuts[[nta]]
+        } else {
+          cuts <- which(x$surv[[nta]][1, ] >= minSurv)
+        }
         ylim <- range(c(ylim, x[[demv]][[nta]][, cuts]), 
                       na.rm = TRUE)
         if (! "xlim" %in% names(args)) {
@@ -1229,7 +1246,11 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       nn <- 0
       for (nta in 1:length(x$mort)) {
         nn <- nn + 1
-        cuts <- x$cuts[[nta]]
+        if (is.null(minSurv)) {
+          cuts <- x$cuts[[nta]]
+        } else {
+          cuts <- which(x$surv[[nta]][1, ] >= minSurv)
+        }
         yy <- x[[demv]][[nta]][, cuts]
         xx <- x$x[cuts]
         if (!noCIs) {
@@ -1260,7 +1281,11 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       ylim <- c(0, 1)
       xlim <- c(0, 0)
       minAge <- as.numeric(x$modelSpecs["min. age"])
-      cuts <- x$cuts[[nta]]
+      if (is.null(minSurv)) {
+        cuts <- x$cuts[[nta]]
+      } else {
+        cuts <- which(x$surv[[nta]][1, ] >= minSurv)
+      }
       if (! "xlim" %in% names(args)) {
         xlim <- range(c(xlim, x$x[cuts] + minAge), na.rm = TRUE)
       } else {
@@ -1275,12 +1300,12 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         lifeTabL <- x$lifeTable[[nta]]$Lower
         lifeTabU <- x$lifeTable[[nta]]$Upper
       }
-      
+      minAge <- as.numeric(x$modelSpecs["min. age"])
+      idAges <- which(lifeTab$Ages >= minAge)
       plot(xlim, ylim, col = NA, xlab = "Age", ylab = "Survival", 
            main = catname[nta])
       if (minAge > 0) lines(rep(minAge, 2), ylim, lty = 2, col = 'orange')
       nn <- 0
-      cuts <- x$cuts[[nta]]
       yy <- x$surv[[nta]][, cuts]
       xx <- x$x[cuts]
       if (!noCIs) {
@@ -1290,11 +1315,8 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       lwdd <- ifelse(length(lwd) > 1, lwd[1], lwd)
       ltyy <- ifelse(length(lty) > 1, lty[1], lty)
-      lines(lifeTab$Ages, lifeTab$lx, type = "s")
-      if (addLTCIs) {
-        lines(lifeTabL$Ages, lifeTabL$lx, type = "s", lty = 2)
-        lines(lifeTabU$Ages, lifeTabU$lx, type = "s", lty = 2)
-      }
+      lines(lifeTab$Ages[idAges], lifeTab$lx[idAges] / lifeTab$lx[idAges[1]], 
+            type = "s")
       lines(xx + minAge, yy[1, ], lwd = lwdd, col = Palette[1], 
             lty = ltyy)
       if (nta == ncat) {
@@ -4100,9 +4122,9 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   return(demoQuan)
 }
 
-# ================================ #
+# =================================== #
 # ==== G) DEMOGRAPHIC FUNCTIONS: ====
-# ================================ #
+# =================================== #
 # ------------------------------------------- #
 # Functions to calculate pace-shape measures:
 # ------------------------------------------- #
@@ -4164,8 +4186,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   ageInts <- c(0, 0.5, 1, 3, 10, Inf)
   dxVals <- c(0.05, 0.1, 0.25, 0.5, 1)
   
-  # Verify that maxAge is larger than 3, otherwise change the scale to 
-  # intervals shorter than year:
+  # Assign delta x based on maximum longevity:
   dx <- dxVals[findInterval(maxAge, ageInts)]
   
   # Find categorical covariates:
@@ -4174,18 +4195,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   } else {
     covNames <- names(covObj$cat)
   }
-  
-  
-  # Verify that maxAge is larger than 3, otherwise change the scale to months:
-  # if (maxAge < 3) {
-  #   ageFact <- 12
-  #   maxAge <- maxAge * ageFact
-  #   ageFirst <- ageFirst * ageFact
-  #   ageLast <- ageLast * ageFact
-  # } else {
-  #   ageFact <- 1
-  # }
-  
+ 
   # --------------------- #
   # CALCULATE ESTIMATORS: 
   # --------------------- #
@@ -4212,13 +4222,11 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     }
     LT[[covar]] <- list()
     for (ltt in 1:nq) {
-      if (algObj$minAge > 0) {
-        idx <- idx[which(ageLastQuan[idx, ltt] >= algObj$minAge)]
-      }
-      ageLast <- ageLastQuan[idx, ltt] - algObj$minAge
-      ageFirst <- ageFirstQuan[idx, ltt] - algObj$minAge
+      ageLast <- ageLastQuan[, ltt]
+      depType <- departType
+      ageFirst <- ageFirstQuan[, ltt]
       ageFirst[ageFirst < 0] <- 0
-      depType <- departType[idx]
+      
       # Number of records:
       n <- length(ageLast)
       
@@ -4297,7 +4305,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       ex[which(is.na(ex))] <- 0
       
       # Life-table:
-      lifetab <- data.frame(Ages = agev + algObj$minAge, Nx = Nx, Dx = Dx, 
+      lifetab <- data.frame(Ages = agev, Nx = Nx, Dx = Dx, 
                             lx = lx, px = px, qx = qx, Lx = Lx, Tx = Tx, 
                             ex = ex)
       
