@@ -1275,6 +1275,8 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
     catname <- names(x$surv)
     pcol <- ceiling(ncat / 2)
     prow <- ceiling(ncat / pcol)
+    pcol <- 2
+    prow <- ncat
     
     par(mfrow = c(prow, pcol), mar = c(4, 4, 1, 1)) 
     for (nta in 1:ncat) {
@@ -1302,8 +1304,14 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       minAge <- as.numeric(x$modelSpecs["min. age"])
       idAges <- which(lifeTab$Ages >= minAge)
+      # Survival:
+      if (catname[nta] == "nocov") {
+        main <- ""
+      } else {
+        main <- catname[nta]
+      }
       plot(xlim, ylim, col = NA, xlab = "Age", ylab = "Survival", 
-           main = catname[nta])
+           main = main)
       if (minAge > 0) lines(rep(minAge, 2), ylim, lty = 2, col = 'orange')
       nn <- 0
       yy <- x$surv[[nta]][, cuts]
@@ -1320,9 +1328,27 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       lines(xx + minAge, yy[1, ], lwd = lwdd, col = Palette[1], 
             lty = ltyy)
       if (nta == ncat) {
-        legend('topright', c("Life table survival", "Estimated survival"), 
-               col = c(1, Palette[1]), lwd = 2, bty = 'n')
+        legend('topright', c("Life table", "Estimated"), 
+               col = c(1, Palette[1]), lwd = 2, bty = 'n', pch = c(19, NA))
       }
+      
+      # Mortality:
+      yy <- x$mort[[nta]][, cuts]
+      dxLt <- diff(lifeTab$Ages[1:2])
+      ltMu <- -log(1 - lifeTab$qx)
+      ltMu[which(is.infinite(ltMu))] <- NA
+      xlimMort <- c(0, max(lifeTab$Ages))
+      ylimMort <- c(0, max(c(yy[1, ], ltMu), na.rm = TRUE))
+      plot(xlimMort, ylimMort, col = NA, xlab = "Age", ylab = "Mortality")
+      if (minAge > 0) lines(rep(minAge, 2), ylimMort, lty = 2, col = 'orange')
+      if (!noCIs) {
+        polygon(c(xx, rev(xx)) + minAge, c(yy[2, ], rev(yy[3, ])), 
+                col = adjustcolor(Palette[1], alpha.f = 0.25),
+                border = NA)
+      }
+      lines(xx + minAge, yy[1, ], col = Palette[1], lty = ltyy, lwd = lwdd)
+      points(lifeTab$Ages[idAges] + dxLt, ltMu[idAges], pch = 19)
+      
     }
   }
   par(op)
