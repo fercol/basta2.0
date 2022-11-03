@@ -884,7 +884,7 @@ basta.default <- function(object, dataType = "CMR",
                       .CalcMort.matrix, .CalcSurv, 
                       .CalcSurv.numeric, .CalcSurv.matrix,
                       .CalcCumHaz, .CalcCumHaz.numeric, 
-                      .CalcCumHaz.matrix)
+                      .CalcCumHaz.matrix, .JitterPars)
   End <- Sys.time()
   cat("Done\n")
   compTime <- round(as.numeric(End-Start, units = units(End - Start)), 2)
@@ -918,7 +918,7 @@ basta.default <- function(object, dataType = "CMR",
                                    .CalcMort.matrix, .CalcSurv, 
                                    .CalcSurv.numeric, .CalcSurv.matrix,
                                    .CalcCumHaz, .CalcCumHaz.numeric, 
-                                   .CalcCumHaz.matrix)
+                                   .CalcCumHaz.matrix, .JitterPars)
       sfRemoveAll(hidden = TRUE)
       sfStop()
       options(opp)
@@ -929,7 +929,7 @@ basta.default <- function(object, dataType = "CMR",
                          algObj, thinning, .CalcMort, .CalcMort.numeric,
                          .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric,
                          .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
-                         .CalcCumHaz.matrix)
+                         .CalcCumHaz.matrix, .JitterPars)
     }
   } else {
     cat("Simulation started...\n\n")
@@ -939,7 +939,7 @@ basta.default <- function(object, dataType = "CMR",
                        thinning, .CalcMort, .CalcMort.numeric,
                        .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric,
                        .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
-                       .CalcCumHaz.matrix)
+                       .CalcCumHaz.matrix, .JitterPars)
   }
   End <- Sys.time()
   cat("Simulations finished.\n")
@@ -1360,7 +1360,7 @@ print.basta <- function(x, ...) {
   if (is.na(x$DIC[1])){
     cat("\nDIC not calculated.")
   } else {
-    cat(sprintf("\nDIC = %s", round(x$DIC["DIC"], 2)))
+    cat(sprintf("\nDIC = %s\n", round(x$DIC["DIC"], 2)))
   }
 }
 
@@ -3416,7 +3416,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                      thinning, .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
                      .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
                      .CalcCumHaz, .CalcCumHaz.numeric, 
-                     .CalcCumHaz.matrix) {
+                     .CalcCumHaz.matrix, .JitterPars) {
   # Create initial age object:
   ageNow <- ageObj
   
@@ -3830,8 +3830,19 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                     Upper = apply(ageTruncMat, 1, quantile, 0.975))
   
   # Mortality, survival and density quantiles:
-  maxAge <- max(ageLast)
-  xv <- seq(0, maxAge * 4, length = 1000)
+  maxAge <- max(ageLast) * 4
+  
+  # vector of age intervals for dx values:
+  ageInts <- c(0, 1, 5, 10, Inf)
+  DxVals <- c(0.001, 0.005, 0.01, 0.05)
+  
+  # Assign delta x based on maximum longevity:
+  Dx <- DxVals[findInterval(maxAge, ageInts)]
+  
+  # Vector of ages for demographic rate quantiles:
+  xv <- seq(0, maxAge, by = Dx)
+  
+  # Mortality, survival, pdf, and pace-shape quantiles:
   mortQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
                                funtype = "mort", .CalcMort, 
                                .CalcMort.numeric, .CalcMort.matrix, 
@@ -3852,9 +3863,10 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric)
+  # age cuts for basic plots:
   cuts <- list()
   for (nta in names(survQuan)) {
-    cuts[[nta]] <- which(survQuan[[nta]][1, ] > 0.05)
+    cuts[[nta]] <- which(survQuan[[nta]][1, ] > 0.02)
   }
   
   # List of outputs:
@@ -4254,6 +4266,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         
         # Index for individuals dying within interval:
         idDx <- which(xLast < agev[ix] + dx & dType == "D")
+        nDx <- length(idDx)
         
         # Index of truncated in interval:
         idtr <- which(xFirst >= agev[ix])
@@ -4272,12 +4285,13 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         Nx[ix] <- sum(lived)
         
         # Fill in Dx:
-        Dx[ix] <- length(idDx)
+        Dx[ix] <- sum(lived[idDx])
         
         # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
         if (Dx[ix] > 1) {
           ylived <- xLast[idDx] - agev[ix]
-          ax[ix] <- sum(ylived) / Dx[ix]
+          # ax[ix] <- sum(ylived) / nDx
+          ax[ix] <- sum(ylived) / dx / nDx
         } else {
           ax[ix] <- 0
         }
