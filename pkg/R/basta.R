@@ -1295,12 +1295,11 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       if (is.data.frame(x$lifeTable[[nta]])) {
         lifeTab <- x$lifeTable[[nta]]
-        addLTCIs <- FALSE
+        PLE <- FALSE
       } else {
         lifeTab <- x$lifeTable[[nta]]$Mean
-        addLTCIs <- FALSE
-        lifeTabL <- x$lifeTable[[nta]]$Lower
-        lifeTabU <- x$lifeTable[[nta]]$Upper
+        ple <- x$lifeTable[[nta]]$ple
+        PLE <- TRUE
       }
       minAge <- as.numeric(x$modelSpecs["min. age"])
       idAges <- which(lifeTab$Ages >= minAge)
@@ -1325,6 +1324,24 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       ltyy <- ifelse(length(lty) > 1, lty[1], lty)
       lines(lifeTab$Ages[idAges], lifeTab$lx[idAges] / lifeTab$lx[idAges[1]], 
             type = "s")
+      if (PLE) {
+        if (minAge > 0) {
+          idpl <- which(ple$Ages >= minAge)
+          if (ple$Ages[idpl[1]] > minAge) {
+            pleAges <- c(minAge, ple$Ages[idpl])
+            plev <- ple$ple[c(idpl[1] - 1, idpl)]
+            plev <- plev / plev[1]
+          } else {
+            pleAges <- ple$Ages[idpl]
+            plev <- ple$ple[idpl]
+            plev <- plev / plev[1]
+          }
+        } else {
+          pleAges <- ple$Ages
+          plev <- ple$ple
+        }
+        lines(pleAges, plev, col= 'grey60', type = 's')
+      }
       lines(xx + minAge, yy[1, ], lwd = lwdd, col = Palette[1], 
             lty = ltyy)
       if (nta == ncat) {
@@ -1338,7 +1355,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       ltMu <- -log(1 - lifeTab$qx)
       ltMu[which(is.infinite(ltMu))] <- NA
       xlimMort <- c(0, max(lifeTab$Ages))
-      ylimMort <- c(0, max(c(yy[1, ], ltMu), na.rm = TRUE))
+      ylimMort <- c(0, max(c(ltMu), na.rm = TRUE))
       plot(xlimMort, ylimMort, col = NA, xlab = "Age", ylab = "Mortality")
       if (minAge > 0) lines(rep(minAge, 2), ylimMort, lty = 2, col = 'orange')
       if (!noCIs) {
@@ -1347,7 +1364,8 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
                 border = NA)
       }
       lines(xx + minAge, yy[1, ], col = Palette[1], lty = ltyy, lwd = lwdd)
-      points(lifeTab$Ages[idAges] + dxLt, ltMu[idAges], pch = 19)
+      lines(lifeTab$Ages[idAges] + dxLt / 2, ltMu[idAges], pch = 19, type = 'b',
+            lty = 2)
       
     }
   }
@@ -4198,6 +4216,169 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # Construct life table:
 # --------------------- #
 # Function to calculate life table output:
+# .CalcLifeTable <- function(bastaFinal, covObj, algObj, dataObj) {
+#   cat("Constructing life table... ")
+#   
+#   # Age at death or last obs:
+#   ageLastQuan <- bastaFinal$ageLast
+#   ageFirstQuan <- bastaFinal$ageFirst
+#   
+#   # Number of levels:
+#   nq <- ncol(ageFirstQuan)
+#   
+#   # level names:
+#   qnames <- colnames(ageFirstQuan)
+#   
+#   # Indicator for censored or death:
+#   departType <- rep("D", dataObj$n)
+#   if (algObj$dataType == "census") {
+#     departType[dataObj$idCens] <- "C"
+#   }
+#   
+#   # Find maximum age:
+#   maxAge <- max(ageLastQuan)
+#   
+#   # vector of age intervals for dx values:
+#   ageInts <- c(0, 0.5, 1, 3, 10, Inf)
+#   dxVals <- c(0.05, 0.1, 0.25, 0.5, 1)
+#   
+#   # Assign delta x based on maximum longevity:
+#   dx <- dxVals[findInterval(maxAge, ageInts)]
+#   
+#   # Find categorical covariates:
+#   if (is.null(covObj$cat)) {
+#     covNames <- c("noCov")
+#   } else {
+#     covNames <- names(covObj$cat)
+#   }
+#  
+#   # --------------------- #
+#   # CALCULATE ESTIMATORS: 
+#   # --------------------- #
+#   # Create Life tables:
+#   LT <- list()
+#   for (covar in covNames) {
+#     if (covar == "noCov") {
+#       idx <- 1:dataObj$n
+#     } else {
+#       if (inherits(covObj, c("fused", "inMort"))) {
+#         covcat <- "inMort"
+#       } else {
+#         covcat <- "propHaz"
+#       }
+#       if (covcat == "propHaz" & !covar %in% colnames(covObj[[covcat]])) {
+#         if (length(covNames) > 2) {
+#           idx <- which(apply(covObj[[covcat]][, covNames[-1]], 1, sum) == 0)
+#         } else {
+#           idx <- which(covObj[[covcat]][, covNames[-1]] == 0)
+#         }
+#       } else {
+#         idx <- which(covObj[[covcat]][, covar] == 1)
+#       }
+#     }
+#     LT[[covar]] <- list()
+#     for (ltt in 1:nq) {
+#       ageLast <- ageLastQuan[, ltt]
+#       depType <- departType
+#       ageFirst <- ageFirstQuan[, ltt]
+#       ageFirst[ageFirst < 0] <- 0
+#       
+#       # Number of records:
+#       n <- length(ageLast)
+#       
+#       # Set age first to 0 if NULL:
+#       if (is.null(ageFirst)) {
+#         ageFirst <- rep(0, n)
+#       }
+#       
+#       # Unit age vector for that sex:
+#       agev <- seq(from = 0, to = ceiling(max(ageLast[which(depType == "D")])), 
+#                   by = dx)
+#       nage <- length(agev)
+#       
+#       Nx <- Dx <- ax <- rep(0, nage)
+#       for (ix in 1:nage) {
+#         # A) EXPOSURES:
+#         # Find how many entered the interval (including truncated):
+#         idNx <- which(ageFirst < agev[ix] + dx & ageLast >= agev[ix])
+#         nNx <- length(idNx)
+#         
+#         # Extract ages and departType:
+#         xFirst <- ageFirst[idNx]
+#         xLast <- ageLast[idNx]
+#         dType <- departType[idNx]
+#         
+#         # Index for individuals dying within interval:
+#         idDx <- which(xLast < agev[ix] + dx & dType == "D")
+#         nDx <- length(idDx)
+#         
+#         # Index of truncated in interval:
+#         idtr <- which(xFirst >= agev[ix])
+#         
+#         # Index of censored in the interval:
+#         idce <- which(xLast < agev[ix] + dx & dType == "C")
+#         
+#         # Porportion lived within interval:
+#         intr <- rep(0, nNx)
+#         ince <- rep(dx, nNx)
+#         intr[idtr] <- xFirst[idtr] - agev[ix]
+#         ince[idce] <- xLast[idce] - agev[ix]
+#         lived <- (ince - intr) / dx
+#         
+#         # Fill in Nx:
+#         Nx[ix] <- sum(lived)
+#         
+#         # Fill in Dx:
+#         # Dx[ix] <- sum(lived[idDx])
+#         Dx[ix] <- min(nDx, Nx[ix])
+#         
+#         # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
+#         if (Dx[ix] > 1) {
+#           ylived <- xLast[idDx] - agev[ix]
+#           # ax[ix] <- sum(ylived) / nDx
+#           ax[ix] <- sum(ylived) / dx / nDx
+#         } else {
+#           ax[ix] <- 0
+#         }
+#       }
+#       
+#       # Age-specific mortality probability:
+#       qx <- Dx / Nx
+#       qx[which(is.na(qx))] <- 0
+#       
+#       # Age-specific survival probability:
+#       px <- 1 - qx
+#       
+#       # Survivorship (or cumulative survival):
+#       lx <- c(1, cumprod(px))[1:nage]
+#       
+#       # Number of individual years lived within the interval:
+#       Lx <- lx * (1 - ax * qx)
+#       Lx[is.na(Lx)] <- 0
+#       
+#       # Total number of individual years lived after age x:
+#       Tx <- rev(cumsum(rev(Lx))) * dx
+#       
+#       # Remaining life expectancy after age x:
+#       ex <- Tx / lx 
+#       ex[which(is.na(ex))] <- 0
+#       
+#       # Life-table:
+#       lifetab <- data.frame(Ages = agev, Nx = Nx, Dx = Dx, 
+#                             lx = lx, px = px, qx = qx, Lx = Lx, Tx = Tx, 
+#                             ex = ex)
+#       
+#       # Fill up list:
+#       LT[[covar]][[qnames[ltt]]] <- lifetab
+#       
+#     }
+#   }
+#   cat("done.\n")
+#   return(LT)
+# }
+# 
+
+# Function to calculate life table output:
 .CalcLifeTable <- function(bastaFinal, covObj, algObj, dataObj) {
   cat("Constructing life table... ")
   
@@ -4233,7 +4414,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   } else {
     covNames <- names(covObj$cat)
   }
- 
+  
   # --------------------- #
   # CALCULATE ESTIMATORS: 
   # --------------------- #
@@ -4258,104 +4439,188 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         idx <- which(covObj[[covcat]][, covar] == 1)
       }
     }
+    # Non-parametric survival output:
     LT[[covar]] <- list()
-    for (ltt in 1:nq) {
-      ageLast <- ageLastQuan[, ltt]
-      depType <- departType
-      ageFirst <- ageFirstQuan[, ltt]
-      ageFirst[ageFirst < 0] <- 0
-      
-      # Number of records:
-      n <- length(ageLast)
-      
-      # Set age first to 0 if NULL:
-      if (is.null(ageFirst)) {
-        ageFirst <- rep(0, n)
-      }
-      
-      # Unit age vector for that sex:
-      agev <- seq(from = 0, to = ceiling(max(ageLast[which(depType == "D")])), 
-                  by = dx)
-      nage <- length(agev)
-      
-      Nx <- Dx <- ax <- rep(0, nage)
-      for (ix in 1:nage) {
-        # A) EXPOSURES:
-        # Find how many entered the interval (including truncated):
-        idNx <- which(ageFirst < agev[ix] + dx & ageLast >= agev[ix])
-        nin <- length(idNx)
-        
-        # Extract ages and departType:
-        xFirst <- ageFirst[idNx]
-        xLast <- ageLast[idNx]
-        dType <- departType[idNx]
-        
-        # Index for individuals dying within interval:
-        idDx <- which(xLast < agev[ix] + dx & dType == "D")
-        nDx <- length(idDx)
-        
-        # Index of truncated in interval:
-        idtr <- which(xFirst >= agev[ix])
-        
-        # Index of censored in the interval:
-        idce <- which(xLast < agev[ix] + dx & dType == "C")
-        
-        # Porportion lived within interval:
-        intr <- rep(0, nin)
-        ince <- rep(dx, nin)
-        intr[idtr] <- xFirst[idtr] - agev[ix]
-        ince[idce] <- xLast[idce] - agev[ix]
-        lived <- (ince - intr) / dx
-        
-        # Fill in Nx:
-        Nx[ix] <- sum(lived)
-        
-        # Fill in Dx:
-        Dx[ix] <- sum(lived[idDx])
-        
-        # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
-        if (Dx[ix] > 1) {
-          ylived <- xLast[idDx] - agev[ix]
-          # ax[ix] <- sum(ylived) / nDx
-          ax[ix] <- sum(ylived) / dx / nDx
-        } else {
-          ax[ix] <- 0
-        }
-      }
-      
-      # Age-specific mortality probability:
-      qx <- Dx / Nx
-      qx[which(is.na(qx))] <- 0
-      
-      # Age-specific survival probability:
-      px <- 1 - qx
-      
-      # Survivorship (or cumulative survival):
-      lx <- c(1, cumprod(px))[1:nage]
-      
-      # Number of individual years lived within the interval:
-      Lx <- lx * (1 - ax * qx)
-      Lx[is.na(Lx)] <- 0
-      
-      # Total number of individual years lived after age x:
-      Tx <- rev(cumsum(rev(Lx))) * dx
-      
-      # Remaining life expectancy after age x:
-      ex <- Tx / lx 
-      ex[which(is.na(ex))] <- 0
-      
-      # Life-table:
-      lifetab <- data.frame(Ages = agev, Nx = Nx, Dx = Dx, 
-                            lx = lx, px = px, qx = qx, Lx = Lx, Tx = Tx, 
-                            ex = ex)
-      
-      # Fill up list:
-      LT[[covar]][[qnames[ltt]]] <- lifetab
-      
-    }
+    
+    # Extract mean ages:
+    ageLast <- ageLastQuan[idx, 1]
+    depType <- departType[idx]
+    ageFirst <- ageFirstQuan[idx, 1]
+    ageFirst[ageFirst < 0] <- 0
+    
+    # Non-parametric survival:
+    npSx <- .CalcNonParamSurv(ageLast = ageLast, ageFirst = ageFirst, 
+                              departType = depType, dx = dx)
+    
+    
+    # Fill up list:
+    LT[[covar]]$Mean <- npSx$lt
+    LT[[covar]]$ple <- npSx$ple
   }
   cat("done.\n")
   return(LT)
+}
+
+# Non-parametric survival estimation:
+.CalcNonParamSurv <- function(ageLast, ageFirst = NULL,
+                              departType, dx = 1) {
+  # Number of records:
+  n <- length(ageLast)
+  
+  # Set age first to 0 if NULL:
+  if (is.null(ageFirst)) {
+    ageFirst <- rep(0, n)
+  }
+  
+  # ------------------------ #
+  # Product Limit Estimator:
+  # ------------------------ #
+  # Find records with same first and last age:
+  idsame <- which(ageLast == ageFirst)
+  
+  # Increase last age by one day:
+  ageLastb <- ageLast
+  ageLastb[idsame] <- ageLast[idsame] + 1/365.25
+  
+  # Sort ages:
+  idsort <- sort.int(ageLast, index.return = TRUE)$ix
+  
+  # Create new age vector (sorted):
+  agev <- ageLastb[idsort]
+  
+  # Number of ages:
+  nage <- length(agev)
+  
+  # Cx and delta:
+  Cx <- rep(0, nage)
+  delx <- rep(0, nage)
+  
+  # Fill up Cx and delta:
+  for (ii in 1:nage) {
+    idNx <- which(ageFirst <= agev[ii] & ageLastb >= agev[ii])
+    Cx[ii] <- length(idNx)
+    if (departType[idsort[ii]] == "D") delx[ii] <- 1
+  }
+  
+  # Calculate product limit estimator:
+  ple <- cumprod((1 - 1 / Cx)^delx)
+  
+  # Add age 0:
+  Ages <- agev
+  if (Ages[1] > 0) {
+    Ages <- c(0, Ages)
+    ple <- c(1, ple)
+  }
+  
+  # Output:
+  pleTab <- data.frame(Ages = Ages, ple = ple, event = c(0, delx))
+  
+  # ----------- #
+  # Life table:
+  # ----------- #
+  # Unit age vector for that sex:
+  agev <- seq(from = 0, to = ceiling(max(ageLast[which(departType == "D")])), 
+              by = dx)
+  nage <- length(agev)
+  
+  # Outputs:
+  lx <- Nx <- Dx <- ax <- rep(0, nage)
+  lx[1] <- 1
+  for (ix in 1:nage) {
+    
+    if (ix > 1) {
+      idxi <- which(pleTab$Ages > agev[ix])
+      if (length(idxi) > 0) {
+        lx[ix] <- pleTab$ple[idxi[1] - 1]
+      } else {
+        lx[ix] <- lx[ix - 1]
+      }
+    }
+    
+    # A) EXPOSURES:
+    # Find how many entered the interval (including truncated):
+    idNx <- which(ageFirst < agev[ix] + dx & ageLast >= agev[ix])
+    nNx <- length(idNx)
+    
+    # Extract ages and departType:
+    xFirst <- ageFirst[idNx]
+    xLast <- ageLast[idNx]
+    dType <- departType[idNx]
+    
+    # Index for individuals dying within interval:
+    idDx <- which(xLast < agev[ix] + dx & dType == "D")
+    nDx <- length(idDx)
+    
+    # Index of truncated in interval:
+    idtr <- which(xFirst >= agev[ix])
+    
+    # Index of censored in the interval:
+    idce <- which(xLast < agev[ix] + dx & dType == "C")
+    
+    # Porportion lived within interval:
+    intr <- rep(0, nNx)
+    ince <- rep(dx, nNx)
+    intr[idtr] <- xFirst[idtr] - agev[ix]
+    ince[idce] <- xLast[idce] - agev[ix]
+    lived <- (ince - intr) / dx
+    
+    # Fill in Nx:
+    Nx[ix] <- sum(lived)
+    
+    # B) DEATHS:
+    # Fill in Dx:
+    Dx[ix] <- nDx
+    # if (nDx <= Nx[ix]) {
+    #   Dx[ix] <- nDx
+    # } else {
+    #   # idx1 <- which(pleTab$Ages > agev[ix] + dx)[1]
+    #   idx1 <- which(pleTab$Ages > agev[ix])[1]
+    #   lx1 <- pleTab$ple[idx1-1]
+    #   if (ix > 1) {
+    #     idx0 <- which(pleTab$Ages > agev[ix - 1])[1]
+    #     lx0 <- pleTab$ple[idx0]
+    #   } else {
+    #     lx0 <- 1
+    #   }
+    #   qxi <- 1 - lx1/lx0
+    #   Dx[ix] <- Nx[ix] * qxi
+    # }
+    
+    # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
+    if (Dx[ix] > 1) {
+      ylived <- xLast[idDx] - agev[ix]
+      ax[ix] <- sum(ylived) / dx / nDx
+    } else {
+      ax[ix] <- 0
+    }
+  }
+  
+  # Age-specific survival probability:
+  px <- rep(0, nage)
+  px[-nage] <- lx[-1] / lx[-nage]
+  px[which(is.na(px) | px == Inf)] <- 0
+  
+  # Age-specific mortality probability:
+  qx <- 1 - px
+  
+  # Number of individual years lived within the interval:
+  Lx <- lx * (1 - ax * qx)
+  Lx[is.na(Lx)] <- 0
+  
+  # Total number of individual years lived after age x:
+  Tx <- rev(cumsum(rev(Lx))) * dx
+  
+  # Remaining life expectancy after age x:
+  ex <- Tx / lx 
+  ex[which(is.na(ex))] <- 0
+  
+  # Life-table:
+  lt <- data.frame(Ages = agev, Nx = Nx, Dx = Dx, lx = lx, px = px,
+                   qx = qx, Lx = Lx, Tx = Tx, ex = ex)
+  
+  npSurv <- list(ple = pleTab, lt = lt)
+  class(npSurv) <- "nonParamSurv"
+  return(npSurv)
 }
 
 
