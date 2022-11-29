@@ -4462,253 +4462,72 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Non-parametric survival estimation:
-# .CalcNonParamSurv <- function(ageLast, ageFirst = NULL,
-#                               departType, dx = 1) {
-#   # Number of records:
-#   n <- length(ageLast)
-#   
-#   # Set age first to 0 if NULL:
-#   if (is.null(ageFirst)) {
-#     ageFirst <- rep(0, n)
-#   }
-#   
-#   # ------------------------ #
-#   # Product Limit Estimator:
-#   # ------------------------ #
-#   # Find records with same first and last age:
-#   idsame <- which(ageLast == ageFirst)
-#   
-#   # Increase last age by one day:
-#   ageLastb <- ageLast
-#   ageLastb[idsame] <- ageLast[idsame] + 1/365.25
-#   
-#   # Sort ages:
-#   idsort <- sort.int(ageLast, index.return = TRUE)$ix
-#   
-#   # Create new age vector (sorted):
-#   agev <- ageLastb[idsort]
-#   
-#   # Number of ages:
-#   nage <- length(agev)
-#   
-#   # Cx and delta:
-#   Cx <- rep(0, nage)
-#   delx <- rep(0, nage)
-#   
-#   # Fill up Cx and delta:
-#   for (ii in 1:nage) {
-#     idNx <- which(ageFirst <= agev[ii] & ageLastb >= agev[ii])
-#     Cx[ii] <- length(idNx)
-#     if (departType[idsort[ii]] == "D") delx[ii] <- 1
-#   }
-#   
-#   # Calculate product limit estimator:
-#   ple <- cumprod((1 - 1 / Cx)^delx)
-#   
-#   # Add age 0:
-#   Ages <- agev
-#   if (Ages[1] > 0) {
-#     Ages <- c(0, Ages)
-#     ple <- c(1, ple)
-#   }
-#   
-#   # Output:
-#   pleTab <- data.frame(Ages = Ages, ple = ple, event = c(0, delx))
-#   
-#   # ----------- #
-#   # Life table:
-#   # ----------- #
-#   # Unit age vector for that sex:
-#   agev <- seq(from = 0, to = ceiling(max(ageLast[which(departType == "D")])), 
-#               by = dx)
-#   nage <- length(agev)
-#   
-#   # Outputs:
-#   lx <- Nx <- Dx <- ax <- rep(0, nage)
-#   lx[1] <- 1
-#   for (ix in 1:nage) {
-#     
-#     if (ix > 1) {
-#       idxi <- which(pleTab$Ages > agev[ix])
-#       if (length(idxi) > 0) {
-#         lx[ix] <- pleTab$ple[idxi[1] - 1]
-#       } else {
-#         lx[ix] <- lx[ix - 1]
-#       }
-#     }
-#     
-#     # A) EXPOSURES:
-#     # Find how many entered the interval (including truncated):
-#     idNx <- which(ageFirst < agev[ix] + dx & ageLast >= agev[ix])
-#     nNx <- length(idNx)
-#     
-#     # Extract ages and departType:
-#     xFirst <- ageFirst[idNx]
-#     xLast <- ageLast[idNx]
-#     dType <- departType[idNx]
-#     
-#     # Index for individuals dying within interval:
-#     idDx <- which(xLast < agev[ix] + dx & dType == "D")
-#     nDx <- length(idDx)
-#     
-#     # Index of truncated in interval:
-#     idtr <- which(xFirst >= agev[ix])
-#     
-#     # Index of censored in the interval:
-#     idce <- which(xLast < agev[ix] + dx & dType == "C")
-#     
-#     # Porportion lived within interval:
-#     intr <- rep(0, nNx)
-#     ince <- rep(dx, nNx)
-#     intr[idtr] <- xFirst[idtr] - agev[ix]
-#     ince[idce] <- xLast[idce] - agev[ix]
-#     lived <- (ince - intr) / dx
-#     
-#     # Fill in Nx:
-#     Nx[ix] <- sum(lived)
-#     
-#     # B) DEATHS:
-#     # Fill in Dx:
-#     Dx[ix] <- nDx
-#     # if (nDx <= Nx[ix]) {
-#     #   Dx[ix] <- nDx
-#     # } else {
-#     #   # idx1 <- which(pleTab$Ages > agev[ix] + dx)[1]
-#     #   idx1 <- which(pleTab$Ages > agev[ix])[1]
-#     #   lx1 <- pleTab$ple[idx1-1]
-#     #   if (ix > 1) {
-#     #     idx0 <- which(pleTab$Ages > agev[ix - 1])[1]
-#     #     lx0 <- pleTab$ple[idx0]
-#     #   } else {
-#     #     lx0 <- 1
-#     #   }
-#     #   qxi <- 1 - lx1/lx0
-#     #   Dx[ix] <- Nx[ix] * qxi
-#     # }
-#     
-#     # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
-#     if (Dx[ix] > 1) {
-#       ylived <- xLast[idDx] - agev[ix]
-#       ax[ix] <- sum(ylived) / dx / nDx
-#     } else {
-#       ax[ix] <- 0
-#     }
-#   }
-#   
-#   # Age-specific survival probability:
-#   px <- rep(0, nage)
-#   px[-nage] <- lx[-1] / lx[-nage]
-#   px[which(is.na(px) | px == Inf)] <- 0
-#   
-#   # Age-specific mortality probability:
-#   qx <- 1 - px
-#   
-#   # Number of individual years lived within the interval:
-#   Lx <- lx * (1 - ax * qx)
-#   Lx[is.na(Lx)] <- 0
-#   
-#   # Total number of individual years lived after age x:
-#   Tx <- rev(cumsum(rev(Lx))) * dx
-#   
-#   # Remaining life expectancy after age x:
-#   ex <- Tx / lx 
-#   ex[which(is.na(ex))] <- 0
-#   
-#   # Life-table:
-#   lt <- data.frame(Ages = agev, Nx = Nx, Dx = Dx, lx = lx, px = px,
-#                    qx = qx, Lx = Lx, Tx = Tx, ex = ex)
-#   
-#   npSurv <- list(ple = pleTab, lt = lt)
-#   class(npSurv) <- "nonParamSurv"
-#   return(npSurv)
-# }
-
-
 .CalcNonParamSurv <- function(ageLast, ageFirst = NULL,
-                             departType, dx = 1) {
+                              departType, dx = 1) {
   # Number of records:
   n <- length(ageLast)
-  
+
   # Set age first to 0 if NULL:
   if (is.null(ageFirst)) {
     ageFirst <- rep(0, n)
   }
-  
+
   # ------------------------ #
   # Product Limit Estimator:
   # ------------------------ #
   # Find records with same first and last age:
   idsame <- which(ageLast == ageFirst)
-  
+
   # Increase last age by one day:
   ageLastb <- ageLast
   ageLastb[idsame] <- ageLast[idsame] + 1/365.25
-  
-  # create identities and age list:
-  if (is.null(ageFirst)) {
-    allAges <- sort(ageLastb)
-    allAgesId <- departType
-  } else {
-    idAgeFirst <- which(ageFirst > min(ageLastb))
-    allAges <- c(ageFirst[idAgeFirst], ageLastb)
-    allAgesId <- c(rep("F", length(idAgeFirst)), departType)
+
+  # Sort ages:
+  idsort <- sort.int(ageLast, index.return = TRUE)$ix
+
+  # Create new age vector (sorted):
+  agev <- ageLastb[idsort]
+
+  # Number of ages:
+  nage <- length(agev)
+
+  # Cx and delta:
+  Cx <- rep(0, nage)
+  delx <- rep(0, nage)
+
+  # Fill up Cx and delta:
+  for (ii in 1:nage) {
+    idNx <- which(ageFirst <= agev[ii] & ageLastb >= agev[ii])
+    Cx[ii] <- length(idNx)
+    if (departType[idsort[ii]] == "D") delx[ii] <- 1
   }
-  
-  ageTypes <- unique(allAgesId)
-  ntypes <- length(ageTypes)
-  idsort <- sort.int(allAges, index.return = TRUE)$ix
-  allAges <- allAges[idsort]
-  allAgesId <- allAgesId[idsort]
-  nAllAges <- length(allAges)
-  unAllAges <- unique(allAges)
-  nages <- length(unAllAges)
-  ageNames <- as.character(unAllAges)
-  
-  # Count by type:
-  recTab <- matrix(0, nages, ntypes, dimnames = list(ageNames, ageTypes))
-  for (at in ageTypes) {
-    idtemp <- rep(0, nAllAges)
-    idEqAt <- which(allAgesId == at)
-    idtemp[idEqAt] <- 1
-    ttemp <- table(allAges, idtemp)
-    temp <- c(ttemp[, 2])
-    recTab[rownames(ttemp), at] <- temp
-  }
-  
-  # Cumulative tables:
-  cumTab <- apply(recTab, 2, function(xx) {
-    rev(cumsum(rev(xx)))
-  })
-  
-  Nx <- cumTab[, "D"] + cumTab[, "C"] - cumTab[, "F"]
-  Dx <- recTab[, "D"]
-  
-  idDead <- which(recTab[, "D"] > 0)
-  ple <- cumprod(1 - c(Dx / Nx)[idDead])
-  
+
+  # Calculate product limit estimator:
+  ple <- cumprod((1 - 1 / Cx)^delx)
+
   # Add age 0:
-  Ages <- unAllAges[idDead]
+  Ages <- agev
   if (Ages[1] > 0) {
     Ages <- c(0, Ages)
     ple <- c(1, ple)
   }
-  
-  # Fill up table:
-  pleTab <- data.frame(Ages = Ages, ple = ple)
-  
+
+  # Output:
+  pleTab <- data.frame(Ages = Ages, ple = ple, event = c(0, delx))
+
   # ----------- #
   # Life table:
   # ----------- #
   # Unit age vector for that sex:
-  agev <- seq(from = 0, to = ceiling(max(ageLast[which(departType == "D")])), 
+  agev <- seq(from = 0, to = ceiling(max(ageLast[which(departType == "D")])),
               by = dx)
   nage <- length(agev)
-  
+
   # Outputs:
   lx <- Nx <- Dx <- ax <- rep(0, nage)
   lx[1] <- 1
   for (ix in 1:nage) {
-    
+
     if (ix > 1) {
       idxi <- which(pleTab$Ages > agev[ix])
       if (length(idxi) > 0) {
@@ -4717,40 +4536,41 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         lx[ix] <- lx[ix - 1]
       }
     }
-    
+
     # A) EXPOSURES:
     # Find how many entered the interval (including truncated):
     idNx <- which(ageFirst < agev[ix] + dx & ageLast >= agev[ix])
     nNx <- length(idNx)
-    
+
     # Extract ages and departType:
     xFirst <- ageFirst[idNx]
     xLast <- ageLast[idNx]
     dType <- departType[idNx]
-    
+
     # Index for individuals dying within interval:
     idDx <- which(xLast < agev[ix] + dx & dType == "D")
     nDx <- length(idDx)
-    
+
     # Index of truncated in interval:
     idtr <- which(xFirst >= agev[ix])
-    
+
     # Index of censored in the interval:
     idce <- which(xLast < agev[ix] + dx & dType == "C")
-    
+
     # Porportion lived within interval:
     intr <- rep(0, nNx)
     ince <- rep(dx, nNx)
     intr[idtr] <- xFirst[idtr] - agev[ix]
     ince[idce] <- xLast[idce] - agev[ix]
     lived <- (ince - intr) / dx
-    
+
     # Fill in Nx:
     Nx[ix] <- sum(lived)
-    
+
     # B) DEATHS:
+    # Fill in Dx:
     Dx[ix] <- nDx
-    
+
     # C) PROPORTION LIVED BY THOSE THAT DIED IN INTERVAL:
     if (Dx[ix] > 1) {
       ylived <- xLast[idDx] - agev[ix]
@@ -4759,32 +4579,33 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       ax[ix] <- 0
     }
   }
-  
+
   # Age-specific survival probability:
   px <- rep(0, nage)
   px[-nage] <- lx[-1] / lx[-nage]
   px[which(is.na(px) | px == Inf)] <- 0
-  
+
   # Age-specific mortality probability:
   qx <- 1 - px
-  
+
   # Number of individual years lived within the interval:
   Lx <- lx * (1 - ax * qx)
   Lx[is.na(Lx)] <- 0
-  
+
   # Total number of individual years lived after age x:
   Tx <- rev(cumsum(rev(Lx))) * dx
-  
+
   # Remaining life expectancy after age x:
-  ex <- Tx / lx 
+  ex <- Tx / lx
   ex[which(is.na(ex))] <- 0
-  
+
   # Life-table:
   lt <- data.frame(Ages = agev, Nx = Nx, Dx = Dx, lx = lx, px = px,
                    qx = qx, Lx = Lx, Tx = Tx, ex = ex)
-  
+
   npSurv <- list(ple = pleTab, lt = lt)
   class(npSurv) <- "nonParamSurv"
   return(npSurv)
 }
+
 
