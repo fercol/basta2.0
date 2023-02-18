@@ -2061,7 +2061,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     startTh <- c(-2, 0.01) 
     jumpTh <- c(0.1, 0.1)
     priorMean <- c(-3, 0.01)
-    priorSd <- c(1, 1)
+    priorSd <- c(5, 1) # 2023-02-18
     nameTh <- c("b0", "b1")
     lowTh <- c(-Inf, 0)
     if (algObj$negSenescence) lowTh[2] <- -Inf
@@ -2102,7 +2102,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     startTh <- c(-0.1, 0.6, 0, startTh)
     jumpTh <- c(0.1, 0.1, 0.1, jumpTh) 
     priorMean <- c(-2, 0.01, 0, priorMean)
-    priorSd <- c(1, 1, 1, priorSd)
+    priorSd <- c(1, 5, 1, priorSd) # 2023-02-18
     nameTh <- c("a0", "a1", "c", nameTh)
     lowTh <- c(-Inf, 0, 0, lowTh)
     jitter <- c(0.5, 0.2, 0.2, jitter) 
