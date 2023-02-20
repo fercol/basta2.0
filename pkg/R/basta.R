@@ -1066,7 +1066,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         prow <- npar
       } else if (trace.name == "gamma") {
         idpars <- grep("gamma", colnames(x$params))
-        if (inherits(bastaFinal$fullpar, "theta")) {
+        if (inherits(x$fullpar, "theta")) {
           stop("'gamma' parameters not calculated (not propHaz).", 
                call. = FALSE)
         } else {
