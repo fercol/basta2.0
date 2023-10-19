@@ -9,7 +9,7 @@
 }
 
 \description{
- This package estimates age-specific mortality and survival trajectories with covariates from capture-recapture/recovery or census data in a Bayesian framework when many individuals are of unknown age. It includes tools for data checking, model diagnostics, and outputs such as life-tables and plots.
+ This package estimates age-specific mortality and survival trajectories with covariates from capture-recapture/recovery or census data under a Bayesian framework when many individuals are of unknown age. It includes tools for data checking, model diagnostics, and outputs such as life-tables and plots.
 }
 
 \details{

@@ -153,7 +153,7 @@ As described above, the number of parameters for \code{gammaStart}, \code{gammaJ
 
 \item{names }{Names of all parameters}
 
-\item{DIC }{Basic deviance information criterion (DIC) calculations to be used for model selection (Spiegelhalter \emph{et al.} 2002, Celeux \emph{et al.} 2006). Small differences between values should only be used a reference (see comments in Spiegelhalter \emph{et al.} 2002). If all or some of the simulations failed, then the returned value is \dQuote{\code{Not calculated}}.}
+\item{DIC }{Basic deviance information criterion (DIC) calculations to be used for model selection (Spiegelhalter \emph{et al.} 2002, Celeux \emph{et al.} 2006). Small differences between values should only be used as a reference (see comments in Spiegelhalter \emph{et al.} 2002). If any of the parameter chains did not converge, then the returned value is \dQuote{\code{Not calculated}}.}
 
 \item{KullbackLeibler }{If called by \code{summary}, list with Kullback-Leibler discrepancy matrices between pair of parameters for categorical covariates (McCulloch 1989, Burnham and Anderson 2001) and McCulloch's (1989) calibration measure. If only one simulation was run or if no convergence is reached, then the returned value is \dQuote{\code{Not calculated}}.}
 
@@ -271,5 +271,5 @@ plot(out, plot.type = "demorates")
 
 }
 
-\keyword{Methods}
+\keyword{htest,models,survival}
 

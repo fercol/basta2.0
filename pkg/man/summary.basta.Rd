@@ -129,3 +129,4 @@ plot(bastaCMRout, fancy = TRUE, col = c("dark green", "dark blue"),
      names.legend = c("Females", "Males"))
 }
 
+\keyword{methods}
