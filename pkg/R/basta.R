@@ -1322,8 +1322,12 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       lwdd <- ifelse(length(lwd) > 1, lwd[1], lwd)
       ltyy <- ifelse(length(lty) > 1, lty[1], lty)
-      lines(lifeTab$Ages[idAges], lifeTab$lx[idAges] / lifeTab$lx[idAges[1]], 
-            type = "s")
+      # ======= BUG 2023-10-19 ========= #
+      # lines(lifeTab$Ages[idAges], lifeTab$lx[idAges] / lifeTab$lx[idAges[1]], 
+      #       type = "s")
+      lines(lifeTab$Ages + minAge, lifeTab$lx, type = "s")
+      # ================================ #
+      
       if (PLE) {
         if (minAge > 0) {
           idpl <- which(ple$Ages >= minAge)
@@ -1352,7 +1356,10 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       # Mortality:
       yy <- x$mort[[nta]][, cuts]
       dxLt <- diff(lifeTab$Ages[1:2])
-      ltMu <- -log(1 - lifeTab$qx)
+      # ======= BUG 2023-10-19 ========= #
+      # ltMu <- -log(1 - lifeTab$qx)
+      ltMu <- -log(1 - lifeTab$qx) / dxLt
+      # ================================ #
       ltMu[which(is.infinite(ltMu))] <- NA
       xlimMort <- c(0, max(lifeTab$Ages))
       ylimMort <- c(0, max(c(ltMu), na.rm = TRUE))
@@ -1364,8 +1371,12 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
                 border = NA)
       }
       lines(xx + minAge, yy[1, ], col = Palette[1], lty = ltyy, lwd = lwdd)
-      lines(lifeTab$Ages[idAges] + dxLt / 2, ltMu[idAges], pch = 19, type = 'b',
+      # ======= BUG 2023-10-19 ========= #
+      # lines(lifeTab$Ages[idAges] + dxLt / 2, ltMu[idAges], pch = 19, type = 'b',
+      #       lty = 2)
+      lines(lifeTab$Ages[idAges], ltMu[idAges], pch = 19, type = 'b',
             lty = 2)
+      # ================================ #
       
     }
   }
