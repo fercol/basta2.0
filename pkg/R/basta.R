@@ -1303,6 +1303,8 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       minAge <- as.numeric(x$modelSpecs["min. age"])
       idAges <- which(lifeTab$Ages >= minAge)
+      ltMinAge <- lifeTab$Ages[idAges[1]]
+      
       # Survival:
       if (catname[nta] == "nocov") {
         main <- ""
@@ -1315,6 +1317,11 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       nn <- 0
       yy <- x$surv[[nta]][, cuts]
       xx <- x$x[cuts]
+      if (ltMinAge > minAge) {
+        idxx <- which(xx + minAge >= ltMinAge)
+        yy <- yy[, idxx] / yy[, idxx[1]]
+        xx <- xx[idxx]
+      }
       if (!noCIs) {
         polygon(c(xx, rev(xx)) + minAge, c(yy[2, ], rev(yy[3, ])), 
                 col = adjustcolor(Palette[1], alpha.f = 0.25),
@@ -1323,16 +1330,15 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       lwdd <- ifelse(length(lwd) > 1, lwd[1], lwd)
       ltyy <- ifelse(length(lty) > 1, lty[1], lty)
       # ======= BUG 2023-10-19 ========= #
-      # lines(lifeTab$Ages[idAges], lifeTab$lx[idAges] / lifeTab$lx[idAges[1]], 
-      #       type = "s")
-      lines(lifeTab$Ages + minAge, lifeTab$lx, type = "s")
+      lines(lifeTab$Ages[idAges], lifeTab$lx[idAges] / lifeTab$lx[idAges[1]],
+            type = "s")
       # ================================ #
       
       if (PLE) {
         if (minAge > 0) {
-          idpl <- which(ple$Ages >= minAge)
-          if (ple$Ages[idpl[1]] > minAge) {
-            pleAges <- c(minAge, ple$Ages[idpl])
+          idpl <- which(ple$Ages >= ltMinAge)
+          if (ple$Ages[idpl[1]] > ltMinAge) {
+            pleAges <- c(ltMinAge, ple$Ages[idpl])
             plev <- ple$ple[c(idpl[1] - 1, idpl)]
             plev <- plev / plev[1]
           } else {
@@ -1354,6 +1360,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       
       # Mortality:
+      xx <- x$x[cuts]
       yy <- x$mort[[nta]][, cuts]
       dxLt <- diff(lifeTab$Ages[1:2])
       # ======= BUG 2023-10-19 ========= #
@@ -1372,10 +1379,10 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       lines(xx + minAge, yy[1, ], col = Palette[1], lty = ltyy, lwd = lwdd)
       # ======= BUG 2023-10-19 ========= #
-      # lines(lifeTab$Ages[idAges] + dxLt / 2, ltMu[idAges], pch = 19, type = 'b',
-      #       lty = 2)
-      lines(lifeTab$Ages[idAges], ltMu[idAges], pch = 19, type = 'b',
+      lines(lifeTab$Ages[idAges] + dxLt / 2, ltMu[idAges], pch = 19, type = 'b',
             lty = 2)
+      # lines(lifeTab$Ages[idAges], ltMu[idAges], pch = 19, type = 'b',
+      #       lty = 2)
       # ================================ #
       
     }
