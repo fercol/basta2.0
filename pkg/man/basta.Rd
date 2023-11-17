@@ -326,5 +326,5 @@ plot(out, plot.type = "demorates")
 
 }
 
-\keyword{htest,models,survival}
+\keyword{htest}
 
