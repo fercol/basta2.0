@@ -81,30 +81,85 @@ If \code{dataType} = \dQuote{\code{census}}, then the input data \code{object} r
 
 \code{2) INFERENCE ON AGE-SPECIFIC MORTALITY:}
 
-\code{basta} uses parametric mortality functions to estimate age-specific mortality (survival) from capture-recapture/recovery data. The mortality function describes how the risk of mortality changes with age, and is defined as \eqn{\mu(x | \theta)}, where \eqn{x} corresponds to age and \eqn{\theta} is a vector of parameters to be estimated. 
+\code{basta} uses parametric mortality functions to estimate age-specific mortality (survival) from capture-recapture/recovery data. The mortality function describes how the risk of mortality changes with age, and is defined as 
+\deqn{
+\mu(x | \theta) = \lim_{\Delta x \rightarrow 0} \frac{\Pr[x < X < x + \Delta x | X > x]}{\Delta x},
+}
+where \eqn{X} is a random variable for ages at death, \eqn{x \geq 0} are ages and \eqn{\theta} is the vector of mortality parameters. From the mortality function, the survival function is then given by
+\deqn{
+S(x | \theta) = \exp[-\int_0^x \mu(t | \theta) dt].
+}
 
-The \code{model} argument allows the user to choose between four basic mortality functions, namely (a) Exponential (\dQuote{\code{EX}}; Cox and Oakes 1974), with constant mortality with age specified as
+\code{2.1)}\code{Argument }\dQuote{\code{model}}\code{:}
+
+The \code{model} argument allows the user to choose between four basic mortality functions, namely 
+
+(a) \code{model = }\dQuote{\code{EX}}: The exponential model (Cox and Oakes 1974), with constant mortality with age, specified as
 
 \deqn{\mu_b(x | b) = b,}
 
-where \eqn{b > 0}, (b) the Gompertz mortality function (\dQuote{\code{GO}}; Gompertz 1925, Pletcher 1999), calculated as 
+where \eqn{b > 0}, with survival 
+\deqn{
+S_b(x | \theta) = \exp[-b x].
+}
 
-\deqn{\mu_b(x | b) = exp(b_0 + b_1 x),}
+(b) \code{model = }\dQuote{\code{GO}}: The Gompertz mortality model (Gompertz 1925, Pletcher 1999), calculated as 
 
-where \eqn{-\infty < b_0, b_1 < \infty}, (c) the Weibull mortality model (\dQuote{\code{WE}}; Pinder III \emph{et al.} 1978) calculated as
+\deqn{\mu_b(x | b) = \exp(b_0 + b_1 x),}
+
+where \eqn{-\infty < b_0, b_1 < \infty}, with survival
+\deqn{
+S_b(x | \theta) = \exp\left[\frac{e^{b_0}}{b_1}\left(1 - e^{b_1 x}\right)\right].
+}
+
+(c) \code{model = }\dQuote{\code{WE}}: The Weibull mortality model (Pinder III \emph{et al.} 1978) calculated as
 
 \deqn{\mu_b(x | b) = b_0 b_1^{b_0} x^{b_0 -1},}
 
-where \eqn{b_0, b_1 > 0}, and (d) the logistic mortality model (\dQuote{\code{LO}}; Pletcher 1999), calculated as 
+where \eqn{b_0, b_1 > 0}, with survival
+\deqn{
+S_b(x | \theta) = \exp\left[-(b_1 x)^{b_0}\right].
+}
 
-\deqn{\mu_b(x | b) = exp(b_0 + b_1 x) / (1 + b_2 exp(b_0)/b_1 (exp(b_1 x)-1)),}
-where \eqn{b_0, b_1, b_2 > 0}.
+(d) \code{model = }\dQuote{\code{LO}}: The logistic mortality model (Pletcher 1999), calculated as 
 
-The \code{shape} argument allows the user to extend these models in order to explore more complex mortality shapes. The default value is \dQuote{\code{simple}} which leaves the model as defined above. With value \dQuote{\code{Makeham}}, a constant is added to the mortality, making the model equal to \eqn{\mu_0(x | \theta)= \mu_b(x | b) + c}, where \eqn{\theta = [c, b]}. With value \dQuote{\code{bathtub}}, concave shapes in mortality can be explored. This is achieved by adding a declining Gompertz term and a constant parameter to the basic mortality model, namely
+\deqn{\mu_b(x | b) = \frac{\exp(b_0 + b_1 x)}{1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x}-1\right)},}
+where \eqn{b_0, b_1, b_2 > 0}, with survival
+\deqn{
+S_b(x | \theta) = \left[1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x} - 1\right)\right]^{-1 / b_2}.
+}
 
-\deqn{\mu_0(x | \theta) = exp(a_0 - a_1 x) + c + \mu_b(x | b)},
+\code{2.2)}\code{Argument }\dQuote{\code{shape}}\code{:}
 
-where \eqn{-\infty < a_0 < \infty}, \eqn{a_1 \leq 0} and \eqn{c \leq 0}.
+The \code{shape} argument allows the user to extend these models in order to explore more complex mortality shapes. 
+
+(a) \code{shape = }\dQuote{\code{simple}}: (default) Leaves the model as defined above, with mortality given by
+\deqn{
+\mu(x | \theta) = \mu_b(x | \theta)
+}
+and survival
+\deqn{
+S(x | \theta) = S_b(x | \theta).
+}
+
+(b) \code{shape = }\dQuote{\code{Makeham}}: A constant is added to the mortality, such that the mortality is given by
+\deqn{
+\mu(x | \theta) = c + \mu_b(x | \theta_1),
+}
+where \eqn{\theta = [c, \theta_1]}, and with survival
+\deqn{
+S(x | \theta) = e^{-cx} S_b(x | \theta_1)
+}
+
+(c) \code{shape = }\dQuote{\code{bathtub}}: produces a concave shapes in mortality by adding a declining Gompertz term and a constant parameter to the basic mortality model, where the mortality function is
+\deqn{
+\mu(x | \theta) = \exp(a_0 - a_1 x) + c + \mu_b(x | \theta_1),
+}
+where \eqn{a_0 \in \mathbb{R}}, \eqn{a_1, c \geq 0} and \eqn{\theta_1 \in \theta} are specified based on argument \code{model}, and with survival
+\deqn{
+S(x | \theta) = \exp\left[\frac{e^{a_0}}{a_1}\left(e^{a_1 x} - 1\right)-cx\right] S_b(x | \theta_1).
+}
+
 
 \code{3) COVARIATES:}
 
@@ -112,15 +167,15 @@ Covariates are selected by means of the argument \code{formulaMort}, which requi
 
 When covariates are included in the dataset, the \code{basta} function provides three different ways in which these can be evaluated by using argument \code{covarsStruct}: 
 
-1. \dQuote{\code{fused}} will make the mortality parameters linear functions of all categorical covariates (analogous to a generalised linear model (GLM) structure) and will put all continuous covariates under a proportional hazards structure. Thus, for a simple exponential model with constant mortality of the form \eqn{\mu_0(x | b) = b}, the parameter is equal to \eqn{b = b_0 + b_1 z_1 + \dots, b_k z_k}, where \eqn{[b_0, \dots, b_k]} are paramters that link the mortality parameter \eqn{b} with the categorical covariates \eqn{[z_1,\dots,z_k]}.
+3.1 \dQuote{\code{fused}} will make the mortality parameters linear functions of all categorical covariates (analogous to a generalised linear model (GLM) structure) and will put all continuous covariates under a proportional hazards structure. Thus, for a simple exponential model with constant mortality of the form \eqn{\mu_0(x | b) = b}, the parameter is equal to \eqn{b = b_1 z_1 + \dots, b_k z_k}, where \eqn{[b_1, \dots, b_k]} are paramters that link the mortality parameter \eqn{b} with the categorical covariates \eqn{[z_1,\dots,z_k]}.
 
-2. \dQuote{\code{prop.haz}} will put all covariates under a proportional hazards structure irrespective of the type of variable. In this case, the mortality model is be further extended by including a proportional hazards structure, of the form 
+3.2 \dQuote{\code{prop.haz}} will put all covariates under a proportional hazards structure irrespective of the type of variable. In this case, the mortality model is be further extended by including a proportional hazards structure, of the form 
 
-\deqn{\mu(x | \theta, \Gamma, Z_a, Z_c) = \mu_0(x | \theta, Z_a) exp(\Gamma Z_c)},
+\deqn{\mu(x | \theta, \gamma, Z_a, Z_c) = \mu_0(x | \theta, Z_a) \exp(Z_c \gamma),}
 
-where \eqn{\mu_0(x | \theta, Z_a)} represents the mortality section as defined above, while the second term \eqn{exp(\Gamma Z_c)} corresponds to the proportional hazards function.  \eqn{Z_a} and \eqn{Z_c} are covariate (design) matrices for categorical and continuous covariates, respectively.
+where \eqn{\mu_0(x | \theta, Z_a)} represents the baseline mortality as defined above, while the second term \eqn{\exp(Z_c \gamma)} corresponds to the proportional hazards function.  \eqn{Z_a} and \eqn{Z_c} are covariate (design) matrices for categorical and continuous covariates, respectively, while \eqn{\gamma} is a vector of proportional hazards parameters.
 
-3. \dQuote{\code{all.in.mort}} will put all covariates as linear functions of the survival parameters as explained above. Since most models require the lower bounds for the mortality parameters to be equal to 0, the only model that can be used for this test is Gompertz with \code{shape} set to \dQuote{\code{simple}}. In case these arguments are specified deferently, a warning message is printed noting that \code{model} will be forced to be \dQuote{\code{GO}} and \code{shape} will be set to \dQuote{\code{simple}}.
+3.3 \dQuote{\code{all.in.mort}} will put all covariates as linear functions of the survival parameters as explained above. Since most models require the lower bounds for the mortality parameters to be equal to 0, the only model that can be used for this test is Gompertz with \code{shape} set to \dQuote{\code{simple}}. In case these arguments are specified differently, a warning message is printed noting that \code{model} will be forced to be \dQuote{\code{GO}} and \code{shape} will be set to \dQuote{\code{simple}}.
 
 \code{4) MCMC SETTINGS:}
 
