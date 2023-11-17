@@ -17,7 +17,7 @@
 	Package: \tab BaSTA2.0 \cr
 	Type: \tab Package\cr
 	Version: \tab 2.0.0\cr
-	Date: \tab 2022-10-05\cr
+	Date: \tab 2023-11-15\cr
 	License: \tab GNU General Public Licence\cr
 	LazyLoad: \tab yes\cr
 }
@@ -25,7 +25,7 @@
 Parametric estimation of age-specific survival and mortality from capture-mark-recapture or census data including individuals with unknown times of birth and death.
 }
 
-\author{Fernando Colchero \email{colchero@imada.sdu.dk}}
+\author{Fernando Colchero \email{fernando_colchero@eva.mpg.de}}
 
 \references{
 Colchero, F. and J.S. Clark (2012) Bayesian inference on age-specific survival from capture-recapture data for censored and truncated data. \emph{Journal of Animal Ecology} 81, 139-149.

@@ -74,7 +74,7 @@ The input data \code{object} requires at least five dates columns, namely \dQuot
  	\item{nNoBirth }{Integer indicating the number of records with uncertain birth date.}	
 }
 
-\author{Fernando Colchero \email{colchero@imada.sdu.dk}}
+\author{Fernando Colchero \email{fernando_colchero@eva.mpg.de}}
 
 \seealso{\code{\link{FixCMRdata}} to fix potential issues for capture-mark-recapture data.}
 

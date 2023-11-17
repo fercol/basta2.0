@@ -37,7 +37,7 @@ Both functions print to the screen the results of the \code{\link{DataCheck}} fu
 }
 
 
-\author{Fernando Colchero \email{colchero@imada.sdu.dk}}
+\author{Fernando Colchero \email{fernando_colchero@eva.mpg.de}}
 
 \seealso{\code{\link{DataCheck}} for running a data check on the input data for function \code{\link{basta}}, \code{\link{FixCMRdata}} to fix potential issues for capture-mark-recapture data.}
 

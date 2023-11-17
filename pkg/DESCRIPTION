@@ -1,12 +1,11 @@
 Package: BaSTA2.0
 Type: Package
-Title: Age-Specific Bayesian Survival Trajectory Analysis from Incomplete census or capture-recapture/recovery Data
+Title: Age-Specific Bayesian Survival Trajectory Analysis from Incomplete Census or Capture-Recapture/Recovery Data
 Version: 2.0.0
-Date: 2022-10-05
+Date: 2023-11-15
 Author: Fernando Colchero
-Maintainer: Fernando Colchero <colchero@imada.sdu.dk>
+Maintainer: Fernando Colchero <fernando_colchero@eva.mpg.de>
 Depends: R (>= 3.5.0), snowfall
-Imports: snowfall
 Description: Estimates survival and mortality with covariates from census or capture-recapture/recovery data in a Bayesian framework when many individuals are of unknown age. It includes tools for data checking, model diagnostics and outputs such as life-tables and plots.
 License: GPL
 LazyLoad: yes

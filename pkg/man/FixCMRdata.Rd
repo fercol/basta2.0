@@ -49,7 +49,7 @@ For \code{dataType} = \dQuote{\code{CMR}}:
 
 }
 
-\author{Fernando Colchero \email{colchero@imada.sdu.dk}}
+\author{Fernando Colchero \email{fernando_colchero@eva.mpg.de}}
 
 \seealso{\code{\link{DataCheck}} for running a data check on the input data for function \code{\link{basta}}.}
 

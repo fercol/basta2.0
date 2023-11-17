@@ -852,7 +852,7 @@ basta.default <- function(object, dataType = "CMR",
   # --------------------------------------- #
   # Assign variables to global environment:
   # --------------------------------------- #
-  for (name in intVars) assign(name, get(name), envir = globalenv())
+  # for (name in intVars) assign(name, get(name), envir = globalenv())
   
   # ------------------------------ #
   # Initial likelihood and priors:
@@ -870,7 +870,7 @@ basta.default <- function(object, dataType = "CMR",
   
   # include in intVars:
   intVars <- c(intVars, "priorAgeObj")
-  assign("priorAgeObj", get("priorAgeObj"), envir = globalenv())
+  # assign("priorAgeObj", get("priorAgeObj"), envir = globalenv())
   
   # ----------------------- #
   # Run MCMC to find jumps:
@@ -879,7 +879,7 @@ basta.default <- function(object, dataType = "CMR",
   Start <- Sys.time()
   jumpRun <- .RunMCMC(1, UpdJumps = TRUE, parJumps = NA, ageObj, dataObj,
                       parObj, fullParObj, covObj, 
-                      priorAgeObj, algObj, thinning, 
+                      priorAgeObj, algObj, 
                       .CalcMort, .CalcMort.numeric, 
                       .CalcMort.matrix, .CalcSurv, 
                       .CalcSurv.numeric, .CalcSurv.matrix,
@@ -913,7 +913,7 @@ basta.default <- function(object, dataType = "CMR",
       bastaOut <- sfClusterApplyLB(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                                    parJumps = jumpRun$jumps, ageObj, dataObj,
                                    parObj, fullParObj, covObj, 
-                                   priorAgeObj, algObj, thinning, 
+                                   priorAgeObj, algObj, 
                                    .CalcMort, .CalcMort.numeric, 
                                    .CalcMort.matrix, .CalcSurv, 
                                    .CalcSurv.numeric, .CalcSurv.matrix,
@@ -926,7 +926,7 @@ basta.default <- function(object, dataType = "CMR",
       bastaOut <- lapply(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                          parJumps = jumpRun$jumps, ageObj, dataObj,
                          parObj, fullParObj, covObj, priorAgeObj, 
-                         algObj, thinning, .CalcMort, .CalcMort.numeric,
+                         algObj, .CalcMort, .CalcMort.numeric,
                          .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric,
                          .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
                          .CalcCumHaz.matrix, .JitterPars)
@@ -936,7 +936,7 @@ basta.default <- function(object, dataType = "CMR",
     bastaOut <- lapply(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                        parJumps = jumpRun$jumps, ageObj, dataObj, parObj, 
                        fullParObj, covObj, priorAgeObj, algObj,
-                       thinning, .CalcMort, .CalcMort.numeric,
+                       .CalcMort, .CalcMort.numeric,
                        .CalcMort.matrix, .CalcSurv, .CalcSurv.numeric,
                        .CalcSurv.matrix, .CalcCumHaz, .CalcCumHaz.numeric, 
                        .CalcCumHaz.matrix, .JitterPars)
@@ -3475,7 +3475,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # -------------- #
 .RunMCMC <- function(sim, UpdJumps = TRUE, parJumps = NA, ageObj, dataObj,
                      parObj, fullParObj, covObj, priorAgeObj, algObj,
-                     thinning, .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                     .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
                      .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
                      .CalcCumHaz, .CalcCumHaz.numeric, 
                      .CalcCumHaz.matrix, .JitterPars) {
@@ -3515,6 +3515,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     # Start jumps for Metropolis algorithm:
     niter <- 7500
     burnin <- niter
+    thinning <- 1
     iterUpd <- 50
     updTarg <- 0.25
     updSeq <- seq(1, niter, iterUpd)
@@ -3534,6 +3535,8 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     McmcOutObj <- list()
   } else {
     niter <- algObj$niter
+    burnin <- algObj$burnin
+    thinning <- algObj$thinning
     thinSeq <- seq(burnin, niter, thinning)
     allSeq <- seq(1, niter, thinning)
     matrows <- length(allSeq)

@@ -216,7 +216,7 @@ Pinder III, J.E., Wiener, J.G. and Smith, M.H. (1978) The Weibull distribution: 
 Spiegelhalter, D.J., Best, N.G., Carlin, B.P. and van der Linde, A. (2002) Bayesian measures of model complexity and fit. \emph{Journal of the Royal Statistical Society: Series B}, 64, 583-639.
 }
 
-\author{Fernando Colchero \email{colchero@imada.sdu.dk}}
+\author{Fernando Colchero \email{fernando_colchero@eva.mpg.de}}
 
 \seealso{
 \code{\link{summary.basta}}, \code{print.basta}, \code{plot.basta} to visualise summary outputs for objects of class \dQuote{\code{basta}}. 

@@ -13,7 +13,8 @@ These functions are all generic methods for class \code{basta}.
 \method{summary}{basta}(object, \dots)
 \method{print}{basta}(x, \dots)
 \method{plot}{basta}(x, plot.type = "traces", trace.name = "theta",
-                       densities = FALSE, noCIs = FALSE, \dots)
+                       densities = FALSE, noCIs = FALSE, minSurv = NULL,
+                       \dots)
 }
 \arguments{
   \item{object }{An object of class \code{basta}.}
@@ -27,6 +28,8 @@ These functions are all generic methods for class \code{basta}.
   \item{densities }{Logical indicating whether to plot the parameter posterior densities instead of the traces.}
   
   \item{noCIs }{Logical indicating whether the 95\% credible intervals should be included in the plot.}
+  
+  \item{minSurv }{Numerical value for the minimum survival level, acts as \code{xlim} using the survival as reference.}
   
   \item{\dots }{Additional arguments passed to functions \code{print}, \code{summary} and \code{plot} (see details).}
 }
@@ -73,7 +76,7 @@ Colchero, F. and J.S. Clark (2012) Bayesian inference on age-specific survival f
 Colchero, F., O.R. Jones and M. Rebke. (2012) BaSTA: an R package for Bayesian estimation of age-specific survival from incomplete mark-recapture/recovery data with covariates. \emph{Method in Ecology and Evolution}. DOI: 10.1111/j.2041-210X.2012.00186.x
 }
 \author{
-Fernando Colchero \email{colchero@imada.sdu.dk}, Owen R. Jones \email{jones@biology.sdu.dk} and Maren Rebke \email{maren.rebke@avitec-research.de}
+Fernando Colchero \email{fernando_colchero@eva.mpg.de}, Owen R. Jones \email{jones@biology.sdu.dk}
 }
 
 \seealso{
