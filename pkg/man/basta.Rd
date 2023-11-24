@@ -66,7 +66,7 @@ basta(object, \dots)
 }
 
 \details{
-\code{1) DATA TYPES:}
+\subsection{1) DATA TYPES:}
 
 The input \code{object} required by BaSTA needs to be constructed differently whether the data are of capture-mark-recapture or census. 
 
@@ -79,89 +79,95 @@ If \code{dataType} = \dQuote{\code{CMR}}, then the data frame requires the follo
 If \code{dataType} = \dQuote{\code{census}}, then the input data \code{object} requires at least five dates columns, namely \dQuote{Birth.Date}, \dQuote{Min.Birth.Date}, \dQuote{Max.Birth.Date}, \dQuote{Entry.Date}, and \dQuote{Depart.Date}. All dates need to be format as \dQuote{\%Y-\%m-\%d}. In addition, a \dQuote{Depart.Type} column is required with two types of departures \dQuote{C} for Censored and \dQuote{D} for dead (see \code{\link{bastaCensDat}} for a census dataset example).
 
 
-\code{2) INFERENCE ON AGE-SPECIFIC MORTALITY:}
+\subsection{2) AGE-SPECIFIC MORTALITY MODELS:}
 
-\code{basta} uses parametric mortality functions to estimate age-specific mortality (survival) from capture-recapture/recovery data. The mortality function describes how the risk of mortality changes with age, and is defined as 
+\code{basta} performs Bayesian inference on parametric age-specific mortality and survival when not all ages are known (Colchero and Clark 2012, Colchero \emph{et al.} 2012, Colchero \emph{et al.} 2021). The mortality function describes how the risk of mortality changes with age, and is defined as 
 \deqn{
 \mu(x | \theta) = \lim_{\Delta x \rightarrow 0} \frac{\Pr[x < X < x + \Delta x | X > x]}{\Delta x},
 }
 where \eqn{X} is a random variable for ages at death, \eqn{x \geq 0} are ages and \eqn{\theta} is the vector of mortality parameters. From the mortality function, the survival function is then given by
 \deqn{
-S(x | \theta) = \exp[-\int_0^x \mu(t | \theta) dt].
+S(x | \bm{\theta}) = \exp[-\int_0^x \mu(t | \bm{\theta}) dt].
 }
 
-\code{2.1)}\code{Argument }\dQuote{\code{model}}\code{:}
+\code{1.1)}\code{Argument }\dQuote{\code{model}}\code{:}
 
 The \code{model} argument allows the user to choose between four basic mortality functions, namely 
 
 (a) \code{model = }\dQuote{\code{EX}}: The exponential model (Cox and Oakes 1974), with constant mortality with age, specified as
 
-\deqn{\mu_b(x | b) = b,}
+\deqn{\mu_b(x | \bm{\theta}) = b,}
 
 where \eqn{b > 0}, with survival 
 \deqn{
-S_b(x | \theta) = \exp[-b x].
+S_b(x | \bm{\theta}) = \exp[-b x].
 }
 
 (b) \code{model = }\dQuote{\code{GO}}: The Gompertz mortality model (Gompertz 1925, Pletcher 1999), calculated as 
 
-\deqn{\mu_b(x | b) = \exp(b_0 + b_1 x),}
+\deqn{\mu_b(x | \bm{\theta}) = \exp(b_0 + b_1 x),}
 
 where \eqn{-\infty < b_0, b_1 < \infty}, with survival
 \deqn{
-S_b(x | \theta) = \exp\left[\frac{e^{b_0}}{b_1}\left(1 - e^{b_1 x}\right)\right].
+S_b(x | \bm{\theta}) = \exp\left[\frac{e^{b_0}}{b_1}\left(1 - e^{b_1 x}\right)\right].
 }
 
 (c) \code{model = }\dQuote{\code{WE}}: The Weibull mortality model (Pinder III \emph{et al.} 1978) calculated as
 
-\deqn{\mu_b(x | b) = b_0 b_1^{b_0} x^{b_0 -1},}
+\deqn{\mu_b(x | \bm{\theta}) = b_0 b_1^{b_0} x^{b_0 -1},}
 
 where \eqn{b_0, b_1 > 0}, with survival
 \deqn{
-S_b(x | \theta) = \exp\left[-(b_1 x)^{b_0}\right].
+S_b(x | \bm{\theta}) = \exp\left[-(b_1 x)^{b_0}\right].
 }
 
 (d) \code{model = }\dQuote{\code{LO}}: The logistic mortality model (Pletcher 1999), calculated as 
 
-\deqn{\mu_b(x | b) = \frac{\exp(b_0 + b_1 x)}{1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x}-1\right)},}
+\deqn{\mu_b(x | \bm{\theta}) = \frac{\exp(b_0 + b_1 x)}{1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x}-1\right)},}
 where \eqn{b_0, b_1, b_2 > 0}, with survival
 \deqn{
-S_b(x | \theta) = \left[1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x} - 1\right)\right]^{-1 / b_2}.
+S_b(x | \bm{\theta}) = \left[1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x} - 1\right)\right]^{-1 / b_2}.
 }
 
-\code{2.2)}\code{Argument }\dQuote{\code{shape}}\code{:}
+\code{1.2)}\code{Argument }\dQuote{\code{shape}}\code{:}
 
 The \code{shape} argument allows the user to extend these models in order to explore more complex mortality shapes. 
 
 (a) \code{shape = }\dQuote{\code{simple}}: (default) Leaves the model as defined above, with mortality given by
 \deqn{
-\mu(x | \theta) = \mu_b(x | \theta)
+\mu(x | \bm{\theta}) = \mu_b(x | \bm{\theta})
 }
 and survival
 \deqn{
-S(x | \theta) = S_b(x | \theta).
+S(x | \bm{\theta}) = S_b(x | \bm{\theta}.
 }
 
 (b) \code{shape = }\dQuote{\code{Makeham}}: A constant is added to the mortality, such that the mortality is given by
 \deqn{
-\mu(x | \theta) = c + \mu_b(x | \theta_1),
+\mu(x | \bm{\theta}) = c + \mu_b(x | \bm{\theta}_1),
 }
-where \eqn{\theta = [c, \theta_1]}, and with survival
+where \eqn{\bm{\theta} = [c, \bm{\theta}_1]}, and with survival
 \deqn{
-S(x | \theta) = e^{-cx} S_b(x | \theta_1)
+S(x | \bm{\theta}) = e^{-cx} S_b(x | \bm{\theta}_1)
 }
+
+The most common models with this shape is the Gompertz-Makeham model (Gompertz 1825, Makeham 1866).
 
 (c) \code{shape = }\dQuote{\code{bathtub}}: produces a concave shapes in mortality by adding a declining Gompertz term and a constant parameter to the basic mortality model, where the mortality function is
 \deqn{
-\mu(x | \theta) = \exp(a_0 - a_1 x) + c + \mu_b(x | \theta_1),
+\mu(x | \bm{\theta}) = \exp(a_0 - a_1 x) + c + \mu_b(x | \bm{\theta}_1),
 }
-where \eqn{a_0 \in \mathbb{R}}, \eqn{a_1, c \geq 0} and \eqn{\theta_1 \in \theta} are specified based on argument \code{model}, and with survival
+where \eqn{a_0 \in \mathbb{R}}, \eqn{a_1, c \geq 0} and \eqn{\bm{\theta}_1 \subset \bm{\theta}} are specified based on argument \code{model}, and with survival
 \deqn{
 S(x | \theta) = \exp\left[\frac{e^{a_0}}{a_1}\left(e^{a_1 x} - 1\right)-cx\right] S_b(x | \theta_1).
 }
 
+The most widely use \dQuote{\code{bathtub}} shaped model is the \bold{Siler mortality model} (Siler 1979), which provides considerably good fits to mammalian data. The arguments for the Siler model are:
 
-\code{3) COVARIATES:}
+\preformatted{basta(..., model = "GO", shape = "bathtub", ...)}
+
+
+\subsection{3) COVARIATES:}
 
 Covariates are selected by means of the argument \code{formulaMort}, which requires an object of class formula, just as with other statistical inference functions such as \code{lm} or \code{glm}.
 
@@ -197,6 +203,46 @@ As described above, the number of parameters for \code{gammaStart}, \code{gammaJ
 
 %Another additional argument is \code{returnAges}, which outputs a value \code{estAges}, which is a matrix with all estimated ages after the burnin and thinning. This matrix also includes ages that were known, thus each row corresponds to the individual in the same row as the original dataset.
 
+\subsection{6) SUMMARY STATISTICS:}
+From the converged sequence of mortality parameters, BaSTA calculates a number of summary statistics, their standard errors and their lower and upper 95\% credible intervals. 
+
+\code{6.1) Remaining life expectancy:}
+
+The function calculates remaining life expectancy as
+\deqn{
+e_{0} = \int_{0}^{\infty} S(t) dt.
+}
+
+\code{6.2) Measures of inequality and equality:}
+
+The function calculates different measures of inequality and equality in the distribution of ages at death that results from the parametric model:
+
+- \code{Lifespan inequality:} (Demetrius 1974, Keyfitz and Caswell 2005) given by
+
+\deqn{
+H = -\frac{\int_{0}^{\infty} S(x) \ln [S(x)] dx}{e_0}
+}
+
+- \code{Lifespan equality:} (Colchero \emph{et al.} 2016, Colchero \emph{et al.} 2021) given by
+
+\deqn{
+\varepsilon = - \ln H.
+}
+
+- \code{Gini coefficient:} (Gini 1912, Shkolnikov \emph{et al.} 2003) given by
+
+\deqn{
+G = 1 - \frac{1}{e_0} \int_0^{\infty} [l(x)]^2 dx
+}
+
+- \code{Coefficient of variation:} given by
+
+\deqn{
+CV = \frac{\sqrt{\sigma^2}}{e_0},
+}
+where \eqn{\sigma^2} is the variance in ages at death.
+
+}
 }
 
 \value{
@@ -258,16 +304,22 @@ Colchero, F., \emph{et al.}  (2021) The long lives of primates and the "invarian
 
 Cox, D. R., and Oakes D. (1984) \emph{Analysis of Survival Data}. Chapman and Hall, London.
 
+Demetrius, L. (1974) Demographic parameters and natural selection. \emph{PNAS} 71, 4645–4647.
+
 Gelman, A., Carlin, J.B., Stern, H.S. and Rubin, D.B. (2004) \emph{Bayesian data analysis}. 2nd edn. Chapman & Hall/CRC, Boca Raton, Florida, USA.
 
 Gompertz, B. (1825) On the nature of the function expressive of the law of human mortality, and on a new mode of determining the value of life contingencies. \emph{Philosophical Transactions of the Royal Society of London}, 115, 513-583.
 
 King, R. and Brooks, S.P. (2002) Bayesian model discrimination for multiple strata capture-recapture data. \emph{Biometrika}, 89, 785-806. 
 
+Makeham, W. M. On the law of mortality (1866). \emph{Journal of the Institute of Actuaries} 13, 1–34.
+
 McCulloch, R.E. (1989) Local model influence. \emph{Journal of the American Statistical Association}, 84, 473-478.
 
 Pinder III, J.E., Wiener, J.G. and Smith, M.H. (1978) The Weibull distribution: a new method of summarizing survivorship data. \emph{Ecology}, 59, 175-179.
 
+Shkolnikov, V., Andreev, E. & Begun, A. Z. (2003) Gini coefficient as a life table function. \emph{Demographic Research} 8, 305–358.
+  
 Spiegelhalter, D.J., Best, N.G., Carlin, B.P. and van der Linde, A. (2002) Bayesian measures of model complexity and fit. \emph{Journal of the Royal Statistical Society: Series B}, 64, 583-639.
 }
 
