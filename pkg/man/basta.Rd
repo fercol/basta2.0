@@ -66,20 +66,20 @@ basta(object, \dots)
 }
 
 \details{
-\subsection{1) DATA TYPES:}
+\bold{1) DATA TYPES:}
 
 The input \code{object} required by BaSTA needs to be constructed differently whether the data are of capture-mark-recapture or census. 
 
-\code{a) capture-mark-recapture (CMR):}
+\code{1.1) capture-mark-recapture (CMR):}
 
 If \code{dataType} = \dQuote{\code{CMR}}, then the data frame requires the following structure. The first column is a vector of individual unique IDs, the second and third columns are birth and death years respectively. Columns \eqn{4, \dots, T+3} represent the observation window (i.e., recapture matrix) of \eqn{T} years. This is followed (optionally) by columns for categorical and continuous covariates (see \code{\link{bastaCMRdat}} for a CMR dataset example).
 
-\code{b) Census:}
+\code{1.2) Census:}
 
 If \code{dataType} = \dQuote{\code{census}}, then the input data \code{object} requires at least five dates columns, namely \dQuote{Birth.Date}, \dQuote{Min.Birth.Date}, \dQuote{Max.Birth.Date}, \dQuote{Entry.Date}, and \dQuote{Depart.Date}. All dates need to be format as \dQuote{\%Y-\%m-\%d}. In addition, a \dQuote{Depart.Type} column is required with two types of departures \dQuote{C} for Censored and \dQuote{D} for dead (see \code{\link{bastaCensDat}} for a census dataset example).
 
 
-\subsection{2) AGE-SPECIFIC MORTALITY MODELS:}
+\bold{2) AGE-SPECIFIC MORTALITY MODELS:}
 
 \code{basta} performs Bayesian inference on parametric age-specific mortality and survival when not all ages are known (Colchero and Clark 2012, Colchero \emph{et al.} 2012, Colchero \emph{et al.} 2021). The mortality function describes how the risk of mortality changes with age, and is defined as 
 \deqn{
@@ -90,7 +90,7 @@ where \eqn{X} is a random variable for ages at death, \eqn{x \geq 0} are ages an
 S(x | \bm{\theta}) = \exp[-\int_0^x \mu(t | \bm{\theta}) dt].
 }
 
-\code{1.1)}\code{Argument }\dQuote{\code{model}}\code{:}
+\code{2.1)}\code{Argument }\dQuote{\code{model}}\code{:}
 
 The \code{model} argument allows the user to choose between four basic mortality functions, namely 
 
@@ -129,7 +129,7 @@ where \eqn{b_0, b_1, b_2 > 0}, with survival
 S_b(x | \bm{\theta}) = \left[1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x} - 1\right)\right]^{-1 / b_2}.
 }
 
-\code{1.2)}\code{Argument }\dQuote{\code{shape}}\code{:}
+\code{2.2)}\code{Argument }\dQuote{\code{shape}}\code{:}
 
 The \code{shape} argument allows the user to extend these models in order to explore more complex mortality shapes. 
 
@@ -167,21 +167,27 @@ The most widely use \dQuote{\code{bathtub}} shaped model is the \bold{Siler mort
 \preformatted{basta(..., model = "GO", shape = "bathtub", ...)}
 
 
-\subsection{3) COVARIATES:}
+\bold{3) COVARIATES:}
 
 Covariates are selected by means of the argument \code{formulaMort}, which requires an object of class formula, just as with other statistical inference functions such as \code{lm} or \code{glm}.
 
 When covariates are included in the dataset, the \code{basta} function provides three different ways in which these can be evaluated by using argument \code{covarsStruct}: 
 
-3.1 \dQuote{\code{fused}} will make the mortality parameters linear functions of all categorical covariates (analogous to a generalised linear model (GLM) structure) and will put all continuous covariates under a proportional hazards structure. Thus, for a simple exponential model with constant mortality of the form \eqn{\mu_0(x | b) = b}, the parameter is equal to \eqn{b = b_1 z_1 + \dots, b_k z_k}, where \eqn{[b_1, \dots, b_k]} are paramters that link the mortality parameter \eqn{b} with the categorical covariates \eqn{[z_1,\dots,z_k]}.
+\code{3.1)} \dQuote{\code{fused}}: 
 
-3.2 \dQuote{\code{prop.haz}} will put all covariates under a proportional hazards structure irrespective of the type of variable. In this case, the mortality model is be further extended by including a proportional hazards structure, of the form 
+This option will make the mortality parameters linear functions of all categorical covariates (analogous to a generalised linear model (GLM) structure) and will put all continuous covariates under a proportional hazards structure. Thus, for a simple exponential model with constant mortality of the form \eqn{\mu_0(x | b) = b}, the parameter is equal to \eqn{b = b_1 z_1 + \dots, b_k z_k}, where \eqn{[b_1, \dots, b_k]} are paramters that link the mortality parameter \eqn{b} with the categorical covariates \eqn{[z_1,\dots,z_k]}.
+
+\code{3.2} \dQuote{\code{prop.haz}}: 
+
+This setting will put all covariates under a proportional hazards structure irrespective of the type of variable. In this case, the mortality model is be further extended by including a proportional hazards structure, of the form 
 
 \deqn{\mu(x | \theta, \gamma, Z_a, Z_c) = \mu_0(x | \theta, Z_a) \exp(Z_c \gamma),}
 
 where \eqn{\mu_0(x | \theta, Z_a)} represents the baseline mortality as defined above, while the second term \eqn{\exp(Z_c \gamma)} corresponds to the proportional hazards function.  \eqn{Z_a} and \eqn{Z_c} are covariate (design) matrices for categorical and continuous covariates, respectively, while \eqn{\gamma} is a vector of proportional hazards parameters.
 
-3.3 \dQuote{\code{all.in.mort}} will put all covariates as linear functions of the survival parameters as explained above. Since most models require the lower bounds for the mortality parameters to be equal to 0, the only model that can be used for this test is Gompertz with \code{shape} set to \dQuote{\code{simple}}. In case these arguments are specified differently, a warning message is printed noting that \code{model} will be forced to be \dQuote{\code{GO}} and \code{shape} will be set to \dQuote{\code{simple}}.
+\code{3.3} \dQuote{\code{all.in.mort}}:
+
+This specification will put all covariates as linear functions of the survival parameters as explained above. Since most models require the lower bounds for the mortality parameters to be equal to 0, the only model that can be used for this test is Gompertz with \code{shape} set to \dQuote{\code{simple}}. In case these arguments are specified differently, a warning message is printed noting that \code{model} will be forced to be \dQuote{\code{GO}} and \code{shape} will be set to \dQuote{\code{simple}}.
 
 \code{4) MCMC SETTINGS:}
 
@@ -203,7 +209,7 @@ As described above, the number of parameters for \code{gammaStart}, \code{gammaJ
 
 %Another additional argument is \code{returnAges}, which outputs a value \code{estAges}, which is a matrix with all estimated ages after the burnin and thinning. This matrix also includes ages that were known, thus each row corresponds to the individual in the same row as the original dataset.
 
-\subsection{6) SUMMARY STATISTICS:}
+\bold{6) SUMMARY STATISTICS:}
 From the converged sequence of mortality parameters, BaSTA calculates a number of summary statistics, their standard errors and their lower and upper 95\% credible intervals. 
 
 \code{6.1) Remaining life expectancy:}
@@ -241,8 +247,6 @@ G = 1 - \frac{1}{e_0} \int_0^{\infty} [l(x)]^2 dx
 CV = \frac{\sqrt{\sigma^2}}{e_0},
 }
 where \eqn{\sigma^2} is the variance in ages at death.
-
-}
 }
 
 \value{
@@ -304,22 +308,26 @@ Colchero, F., \emph{et al.}  (2021) The long lives of primates and the "invarian
 
 Cox, D. R., and Oakes D. (1984) \emph{Analysis of Survival Data}. Chapman and Hall, London.
 
-Demetrius, L. (1974) Demographic parameters and natural selection. \emph{PNAS} 71, 4645–4647.
+Demetrius, L. (1974) Demographic parameters and natural selection. \emph{PNAS} 71, 4645-4647.
 
 Gelman, A., Carlin, J.B., Stern, H.S. and Rubin, D.B. (2004) \emph{Bayesian data analysis}. 2nd edn. Chapman & Hall/CRC, Boca Raton, Florida, USA.
 
 Gompertz, B. (1825) On the nature of the function expressive of the law of human mortality, and on a new mode of determining the value of life contingencies. \emph{Philosophical Transactions of the Royal Society of London}, 115, 513-583.
 
+Keyfitz, N., Caswell, H. (2005) Applied Mathematical Demography. (Springer-Verlag).
+  
 King, R. and Brooks, S.P. (2002) Bayesian model discrimination for multiple strata capture-recapture data. \emph{Biometrika}, 89, 785-806. 
 
-Makeham, W. M. On the law of mortality (1866). \emph{Journal of the Institute of Actuaries} 13, 1–34.
+Makeham, W. M. On the law of mortality (1866). \emph{Journal of the Institute of Actuaries} 13, 1-34.
 
 McCulloch, R.E. (1989) Local model influence. \emph{Journal of the American Statistical Association}, 84, 473-478.
 
 Pinder III, J.E., Wiener, J.G. and Smith, M.H. (1978) The Weibull distribution: a new method of summarizing survivorship data. \emph{Ecology}, 59, 175-179.
 
-Shkolnikov, V., Andreev, E. & Begun, A. Z. (2003) Gini coefficient as a life table function. \emph{Demographic Research} 8, 305–358.
-  
+Shkolnikov, V., Andreev, E. & Begun, A. Z. (2003) Gini coefficient as a life table function. \emph{Demographic Research} 8, 305-358.
+
+Siler, W. A (1979) competing-risk model for animal mortality. \emph{Ecology} 60, 750-757.
+
 Spiegelhalter, D.J., Best, N.G., Carlin, B.P. and van der Linde, A. (2002) Bayesian measures of model complexity and fit. \emph{Journal of the Royal Statistical Society: Series B}, 64, 583-639.
 }
 
