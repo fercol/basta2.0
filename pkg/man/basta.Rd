@@ -55,7 +55,7 @@ basta(object, \dots)
   
 \item{parallel }{A logical argument indicating whether the multiple simulations should be run in parallel or not. If \code{TRUE}, package \pkg{snowfall} is called and multiple simulations are run in parallel. If \pkg{snowfall} is not installed, the model is ran in series.}
   
-\item{ncpus }{a numerical value that indicates the number of cpus to be used if \code{parallel} is \code{TRUE} and package \pkg{snowfall} is installed. The default is 2 cpus. If package pkg{snowfall} is not installed, the simulations are run in series.}
+\item{ncpus }{a numerical value that indicates the number of cpus to be used if \code{parallel} is \code{TRUE} and package \pkg{snowfall} is installed. The default is 2 cpus. If package \pkg{snowfall} is not installed, the simulations are run in series.}
 
 	\item{updateJumps }{A logical argument indicating wheter to update jump standard deviations (adaptive independent Metropolis) until an update rate of 0.25 is achieved (see \code{details}). }
 
@@ -345,29 +345,36 @@ Spiegelhalter, D.J., Best, N.G., Carlin, B.P. and van der Linde, A. (2002) Bayes
 ## ---------- #
 ## CMR data:
 ## ---------- #
+\dontrun{
 ## Load data:
-data("bastaCMRdat", package = "BaSTA2.0")
+data("bastaCMRdat", package = "BaSTA")
 
 ## Check data consistency:
-checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
-                          studyEnd = 70)
+checkedData <- DataCheck(bastaCMRdat, dataType = "CMR", 
+                              studyStart = 51, studyEnd = 70)
 
 ## Run short version of BaSTA on the data:
-out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70, niter = 100, 
-             burnin = 11, thinning = 10, updateJumps = FALSE)
+out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70)
+}
 
 ## ------------- #
 ## Census data:
 ## ------------- #
+\dontrun{
 ## Load data:
-data("bastaCensDat", package = "BaSTA2.0")
+data("bastaCensDat", package = "BaSTA")
 
 ## Check data consistency:
-checkedData  <- DataCheck(bastaCensDat, dataType = "census")
+checkedData <- DataCheck(bastaCensDat, dataType = "census")
 
 ## Run short version of BaSTA on the data:
-out <- basta(bastaCensDat, dataType = "census", niter = 100, burnin = 11, 
-             thinning = 10, updateJumps = FALSE)
+out <- basta(bastaCensDat, dataType = "census")
+}
+
+\dontshow{
+data("bastaCMRout", package = "BaSTA")
+out <- bastaCensDat
+}
 
 ## --------------------- #
 ## Check BaSTA outputs:
@@ -387,4 +394,6 @@ plot(out, plot.type = "demorates")
 }
 
 \keyword{htest}
+\concept{Survival analysis}
+\concept{Bayesian inference}
 

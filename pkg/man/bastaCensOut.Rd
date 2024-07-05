@@ -13,7 +13,7 @@ This dataset is the output of a BaSTA analysis on the simulated dataset \code{\l
 }
 \examples{
 ## Load BaSTA output:
-data("bastaCensOut", package = "BaSTA2.0")
+data("bastaCensOut", package = "BaSTA")
 
 ## Plot traces for survival parameters:
 plot(bastaCensOut)

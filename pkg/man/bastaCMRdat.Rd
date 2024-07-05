@@ -35,7 +35,7 @@ Here is the description of each column:
 }
 \examples{
 ## Load data:
-data("bastaCMRdat", package = "BaSTA2.0")
+data("bastaCMRdat", package = "BaSTA")
 
 ## Check data consistency:
 checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 

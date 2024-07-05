@@ -55,7 +55,7 @@ For \code{dataType} = \dQuote{\code{CMR}}:
 
 \examples{
 ## Load data:
-data("bastaCMRdat", package = "BaSTA2.0")
+data("bastaCMRdat", package = "BaSTA")
 
 ## Fix data:
 fixedData  <- FixCMRdata(bastaCMRdat, studyStart = 51, 

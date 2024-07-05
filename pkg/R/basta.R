@@ -908,7 +908,7 @@ basta.default <- function(object, dataType = "CMR",
       # } else {
       #   sfSource(file = "/Users/fernando/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
       # }
-      sfLibrary("BaSTA2.0", character.only = TRUE,
+      sfLibrary("BaSTA", character.only = TRUE,
       warn.conflicts = FALSE)
       bastaOut <- sfClusterApplyLB(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                                    parJumps = jumpRun$jumps, ageObj, dataObj,
@@ -1486,7 +1486,7 @@ summary.basta <- function(object, ...){
     }
     if (is.null(object$convergence)) {
       if (object$set['nsim'] == 1) {
-        cat("\nConvergence calculations require more than one run.",
+        message("\nConvergence calculations require more than one run.",
             "\nTo estimate potential scale reduction run at least",
             "two simulations.\n")
       } else {

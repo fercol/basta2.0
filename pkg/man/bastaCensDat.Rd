@@ -28,7 +28,7 @@ The resulting dataset includes individuals where the data are left-truncated and
 }
 \examples{
 ## Load data:
-data("bastaCensDat", package = "BaSTA2.0")
+data("bastaCensDat", package = "BaSTA")
 
 ## Check data consistency:
 checkedData  <- DataCheck(bastaCensDat, dataType = "census")

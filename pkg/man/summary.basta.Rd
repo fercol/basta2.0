@@ -48,9 +48,9 @@ Other arguments for \code{plot} include \code{names.legend} to indicate alternat
 \value{ 
 Function \code{summary}() outputs the folowing values:
 
-\item{coefficients }{A matrix with estimated coefficients (i.e. mean values per parameter on the thinned sequences after burnin), which includes standard errors, upper and lower 95\% credible intervals, update rates per parameter (commonly the same for all survival and proportional hazards parameters), serial autocorrelation on the thinned sequences and the potential scale reduction factor for convergence (see \code{Convergence} value below). }
+\item{coefficients }{Matrix with estimated coefficients (i.e. mean values per parameter on the thinned sequences after burnin), which includes standard errors, upper and lower 95\% credible intervals, update rates per parameter (commonly the same for all survival and proportional hazards parameters), serial autocorrelation on the thinned sequences and the potential scale reduction factor for convergence (see \code{Convergence} value below). }
   
-\item{DIC }{Basic deviance information criterion (DIC) calculations to be used for model selection (Spiegelhalter \emph{et al.} 2002).}
+\item{DIC }{Numeric vector with basic deviance information criterion (DIC) calculations to be used for model selection (Spiegelhalter \emph{et al.} 2002).}
 	
 \item{KullbackLeibler }{List with Kullback-Leibler discrepancy matrices between pair of parameters for categorical covariates (McCulloch 1989, Burnham and Anderson 2001) and McCulloch's (1989) calibration measure. If only one simulation was ran or if no convergence was reached, then the returned value is \dQuote{\code{Not calculated}}.}
 
@@ -85,7 +85,7 @@ Fernando Colchero \email{fernando_colchero@eva.mpg.de}, Owen R. Jones \email{jon
 
 \examples{
 ## Load BaSTA output:
-data("bastaCMRout", package = "BaSTA2.0")
+data("bastaCMRout", package = "BaSTA")
 
 ## Print summary output:
 summary(bastaCMRout)

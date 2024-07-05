@@ -36,6 +36,9 @@
 Both functions print to the screen the results of the \code{\link{DataCheck}} function.
 }
 
+\value{
+No return value, prints output to the console
+}
 
 \author{Fernando Colchero \email{fernando_colchero@eva.mpg.de}}
 
@@ -45,7 +48,7 @@ Both functions print to the screen the results of the \code{\link{DataCheck}} fu
 ## CMR data:
 ## --------- #
 ## Load data:
-data("bastaCMRdat", package = "BaSTA2.0")
+data("bastaCMRdat", package = "BaSTA")
 
 ## Check data consistency:
 checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51, 
@@ -54,7 +57,7 @@ checkedData  <- DataCheck(bastaCMRdat, dataType = "CMR", studyStart = 51,
 ## census data:
 ## ------------ #
 ## Load data:
-data("bastaCensDat", package = "BaSTA2.0")
+data("bastaCensDat", package = "BaSTA")
 
 ## Check data consistency:
 checkedData  <- DataCheck(object = bastaCensDat, dataType = "census")

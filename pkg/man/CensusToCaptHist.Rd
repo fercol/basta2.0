@@ -29,6 +29,10 @@ A one character string specifying which time interval should be used between cap
 The \code{d} argument can be specified as an object of class \code{POSIXct} or \code{POSIXlt}, as a vector of integer time intervals or as a character string indicating the day, month and year. (e.g. \code{dd/mm/yyyy}, \code{mmddyyyy}, \code{mm-dd-yyyy} etc.). When \code{d} is of class \code{character} then argument \code{dformat} needs to be specified using the same conventions as in function \code{format.POSIXct} for objects of class \code{POSIXct} or \code{POSIXlt}.
 }
 
+\value{
+Creates an object of class \dQuote{\code{data.frame}} with the reconstructed capture recapture matrix.
+}
+
 \author{
 Owen R. Jones \email{jones@biology.sdu.dk}.
 }
