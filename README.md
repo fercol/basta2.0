@@ -13,14 +13,14 @@ This is the next installment of the R package BaSTA, with several new and improv
 - Allows users to specify minimum and maximum birth and death to improve estimation;
 - Includes summary statistics such as remaining life expectancy, lifespan inequality, lifespan equality;
 
-## How to install BaSTA2.0?
-To install BaSTA2.0 from GitHub, type the following lines of code on the R console:
+## How to install BaSTA version 2.0?
+To install BaSTA version 2.0 from GitHub, type the following lines of code on the R console:
 
 ```R
 # Install and load 'devtools':
 install.packages("devtools")
 library(devtools)
 
-# Install BaSTA2.0:
+# Install BaSTA:
 install_git("https://github.com/fercol/basta2.0", subdir = "pkg/")
 ```
