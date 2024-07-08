@@ -1003,13 +1003,8 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
   on.exit(par(oldpar))
   
   # Wrong plot.type:
-  if (!plot.type %in% c("traces", "demorates", "gof")) {
-    stop("Wrong value for argument 'plot.type'.\nAlternatives are 'traces', 'demorates', or 'gof'.")
-  }
-  
-  # Wrong trace.name:
-  if (!plot.type %in% c("traces", "demorates", "gof")) {
-    stop("Wrong value for argument 'plot.type'.\nAlternatives are 'traces', 'demorates', or 'gof'.")
+  if (!plot.type %in% c("traces", "demorates", "gof", "fancy")) {
+    stop("Wrong value for argument 'plot.type'.\nAlternatives are 'traces', 'demorates', 'gof', or 'fancy'.")
   }
   
   args <- list(...)
@@ -1039,6 +1034,23 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
   } else {
     lty <- 1
   }
+  
+  if (plot.type %in% c("demorates", "fancy")) {
+    catNames <- names(x$mort)
+    lenCat <- length(catNames)
+    
+    if ("names.legend" %in% names(args)) {
+      if (length(args$names.legend) != nv) {
+        stop(sprintf("Wrong length in 'names.legend'. Correct length is %s elements.",
+                     nv), call. = FALSE)
+      } else {
+        legNames <- args$names.legend
+      }
+    } else {
+      legNames <- catNames
+    }
+  }
+  
   # ========== #
   # PARAMETERS:
   # ========== #
@@ -1219,23 +1231,14 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       } else {
         xlim <- c(0, 0)
       }
-      vars <- names(x$mort)
-      if ("names.legend" %in% names(args)) {
-        names.legend <- args$names.legend
-        if (length(vars) != length(names.legend)) {
-          warning(sprintf("Wrong length of names.legend, length should be equal to number of categorical covariates, i.e., %s.", length(vars)))
-        } else {
-          vars <- names.legend
-        }
-      }
       minAge <- as.numeric(x$modelSpecs["min. age"])
-      for (nta in 1:length(x$mort)) {
+      for (icat in 1:lenCat) {
         if (is.null(minSurv)) {
-          cuts <- x$cuts[[nta]]
+          cuts <- x$cuts[[icat]]
         } else {
-          cuts <- which(x$surv[[nta]][1, ] >= minSurv)
+          cuts <- which(x$surv[[icat]][1, ] >= minSurv)
         }
-        ylim <- range(c(ylim, x[[demv]][[nta]][, cuts]), 
+        ylim <- range(c(ylim, x[[demv]][[icat]][, cuts]), 
                       na.rm = TRUE)
         if (! "xlim" %in% names(args)) {
           xlim <- range(c(xlim, x$x[cuts] + minAge), na.rm = TRUE)
@@ -1244,14 +1247,14 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       plot(xlim, ylim, col = NA, xlab = "", ylab = demvname[demv])
       if (minAge > 0) lines(rep(minAge, 2), ylim, lty = 2)
       nn <- 0
-      for (nta in 1:length(x$mort)) {
+      for (icat in 1:lenCat) {
         nn <- nn + 1
         if (is.null(minSurv)) {
-          cuts <- x$cuts[[nta]]
+          cuts <- x$cuts[[icat]]
         } else {
-          cuts <- which(x$surv[[nta]][1, ] >= minSurv)
+          cuts <- which(x$surv[[icat]][1, ] >= minSurv)
         }
-        yy <- x[[demv]][[nta]][, cuts]
+        yy <- x[[demv]][[icat]][, cuts]
         xx <- x$x[cuts]
         if (!noCIs) {
           polygon(c(xx, rev(xx)) + minAge, c(yy[2, ], rev(yy[3, ])), 
@@ -1264,13 +1267,17 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
               lty = ltyy)
       }
       if (nn > 1 & demv == 'surv') {
-        legend('topright', vars, col = Palette[1:nn], pch = 15, bty = 'n')
+        legend(x = 'topright', legend = legNames, 
+               pch = 22, pt.cex = 2, cex = 1.25, 
+               pt.bg = adjustcolor(Palette, alpha.f = 0.25), col = Palette,
+               bty = 'n')
+        
       }
     }
     # ================ #
     # GOODNESS OF FIT: 
     # ================ #
-  } else {
+  } else if (plot.type == "gof") {
     ncat <- length(x$surv)
     catname <- names(x$surv)
     pcol <- ceiling(ncat / 2)
@@ -1279,26 +1286,26 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
     prow <- ncat
     
     par(mfrow = c(prow, pcol), mar = c(4, 4, 1, 1)) 
-    for (nta in 1:ncat) {
+    for (icat in 1:ncat) {
       ylim <- c(0, 1)
       xlim <- c(0, 0)
       minAge <- as.numeric(x$modelSpecs["min. age"])
       if (is.null(minSurv)) {
-        cuts <- x$cuts[[nta]]
+        cuts <- x$cuts[[icat]]
       } else {
-        cuts <- which(x$surv[[nta]][1, ] >= minSurv)
+        cuts <- which(x$surv[[icat]][1, ] >= minSurv)
       }
       if (! "xlim" %in% names(args)) {
         xlim <- range(c(xlim, x$x[cuts] + minAge), na.rm = TRUE)
       } else {
         xlim <- args$xlim
       }
-      if (is.data.frame(x$lifeTable[[nta]])) {
-        lifeTab <- x$lifeTable[[nta]]
+      if (is.data.frame(x$lifeTable[[icat]])) {
+        lifeTab <- x$lifeTable[[icat]]
         PLE <- FALSE
       } else {
-        lifeTab <- x$lifeTable[[nta]]$Mean
-        ple <- x$lifeTable[[nta]]$ple
+        lifeTab <- x$lifeTable[[icat]]$Mean
+        ple <- x$lifeTable[[icat]]$ple
         PLE <- TRUE
       }
       minAge <- as.numeric(x$modelSpecs["min. age"])
@@ -1306,16 +1313,16 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       ltMinAge <- lifeTab$Ages[idAges[1]]
       
       # Survival:
-      if (catname[nta] == "nocov") {
+      if (catname[icat] == "nocov") {
         main <- ""
       } else {
-        main <- catname[nta]
+        main <- catname[icat]
       }
       plot(xlim, ylim, col = NA, xlab = "Age", ylab = "Survival", 
            main = main)
       if (minAge > 0) lines(rep(minAge, 2), ylim, lty = 2, col = 'orange')
       nn <- 0
-      yy <- x$surv[[nta]][, cuts]
+      yy <- x$surv[[icat]][, cuts]
       xx <- x$x[cuts]
       if (ltMinAge > minAge) {
         idxx <- which(xx + minAge >= ltMinAge)
@@ -1354,14 +1361,14 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       }
       lines(xx + minAge, yy[1, ], lwd = lwdd, col = Palette[1], 
             lty = ltyy)
-      if (nta == ncat) {
+      if (icat == ncat) {
         legend('topright', c("Life table", "Estimated"), 
                col = c(1, Palette[1]), lwd = 2, bty = 'n', pch = c(19, NA))
       }
       
       # Mortality:
       xx <- x$x[cuts]
-      yy <- x$mort[[nta]][, cuts]
+      yy <- x$mort[[icat]][, cuts]
       dxLt <- diff(lifeTab$Ages[1:2])
       # ======= BUG 2023-10-19 ========= #
       # ltMu <- -log(1 - lifeTab$qx)
@@ -1385,6 +1392,130 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       #       lty = 2)
       # ================================ #
       
+    }
+  } else if (plot.type == "fancy") {
+    allThetaNames <- c("a0", "a1", "c", "b0", "b1", "b2")
+    allThetaExpr  <- expression(italic(a[0]), italic(a[1]), italic(c), 
+                                italic(b[0]), italic(b[1]), italic(b[2]))
+    parNames <- substr(colnames(x$params), 1, 2)
+    idTh <- which(is.element(substr(parNames, 1, 1), c("a", "b", "c")))
+    thetaMat <- x$params[,idTh]
+    model <- as.character(x$modelSpecs['model'])
+    shape <- as.character(x$modelSpecs['shape'])
+    
+    if (model == "EX" | model == 1) {
+      nTheta <- 1
+      idAllTheta <- 4
+    } else if (model %in% c("GO", "WE") | model %in% c(2, 3)) {
+      nTheta <- 2
+      idAllTheta <- c(4, 5)
+    }  else {
+      nTheta <- 3
+      idAllTheta <- c(4, 5, 6)
+    }
+    if (shape == "Makeham" | shape == 2) {
+      nTheta <- nTheta + 1
+      idAllTheta <- c(3, idAllTheta)
+    } else if(shape == "bathtub" | shape == 3) {
+      nTheta <- nTheta + 3
+      idAllTheta <- c(1:3, idAllTheta)
+    }
+    lows <- c(-Inf, 0, 0, -Inf, 0, 0)
+    names(lows) <- allThetaNames
+    
+    # Mortality ylim:
+    ylimm <- c(0, NA)
+    for (icat in 1:lenCat) {
+      ylimm[2] <- max(c(ylimm[2], x$mort[[icat]][, x$cuts[[icat]]]), 
+                      na.rm = TRUE)
+    }
+    ylimm[2] <- ceiling(ylimm[2] * 10) / 10
+    
+    # Demo variable labels:
+    demLab <- c(surv = expression(paste("Survival, ", italic(S(x)))),
+                mort = expression(paste("Mortality, ", italic(mu(x)))))
+    
+    # Build plots:  
+    layout(mat = matrix(data = c(rep(1:nTheta, each = 2), 
+                                 rep(rep(c(nTheta + 1, nTheta + 2), 
+                                         each = nTheta), 2)), 
+                        nrow  = nTheta * 2, 
+                        ncol  = 3), 
+           widths  = rep(2, 3), 
+           heights = rep(1, nTheta))
+    par(mar=c(3, 3, 0.5, 0.5))
+    for(i in 1:nTheta) {
+      dez <- list()
+      ylz <- rep(NA, lenCat)
+      xlz <- matrix(0, lenCat, 2)
+      for(j in 1:lenCat){
+        idth <- paste(allThetaNames[idAllTheta[i]],
+                      catNames[j], sep = ".")
+        if (lenCat == 1) {
+          idth <- allThetaNames[idAllTheta[i]]
+        }
+        dez[[catNames[j]]] <- density(thetaMat[, idth])
+        ylz[j] <- max(dez[[catNames[j]]]$y)
+        #xlz[j,] <- range(dez[[j]]$x)
+        xlz[j, ] <- quantile(thetaMat[, idth], c(0.01, 0.99))
+      }
+      xr <- range(xlz)
+      xl <- c(floor(max(c(lows[idAllTheta[i]], xr[1])) * 10) / 10, 
+              ceiling(xr[2] * 10) / 10)
+      xd <- ceiling(diff(xl) * 10) / 10
+      plot(x = dez[[1]], xlab = "", ylab = "", xlim = xl, ylim = c(0, max(ylz)), 
+           lwd = 3, axes = FALSE, main = "", col = NA)
+      for(icat in 1:lenCat) {
+        polygon(x = c(dez[[icat]]$x, dez[[icat]]$x[1]), 
+                y = c(dez[[icat]]$y, dez[[icat]]$y[1]), 
+                col = adjustcolor(Palette[icat], alpha.f = 0.25), 
+                border = Palette[icat], lwd = 1.5)
+      }
+      axis(side = 1, at = seq(xl[1], xl[2], length = 5), 
+           line = 0.5, labels = NA, tcl = 0.4)
+      axis(side = 1, at = seq(xl[1], xl[2], length = 3), lwd = NA)
+      mtext(text = allThetaExpr[idAllTheta[i]], side = 2, line = 0, 
+            at = max(ylz) * 0.8, las = 2, cex = 1.25)
+    }
+    
+    # Plot survival probability:
+    par(mar = c(4, 7, 0.5, 0.5))
+    xv <- lapply(1:lenCat, function(idcovs) x$x[x$cuts[[idcovs]]])
+    mxv <- ceiling(max(unlist(xv)) / 5) * 5
+    
+    for (idem in c("mort", "surv")) {
+      if (idem == "surv") {
+        ylmx <- c(0, 1)
+      } else {
+        ylmx <- ylimm
+      }
+      plot(x = c(0, mxv), y = ylmx, col = NA, axes = FALSE, xlab = "", 
+           ylab = "")
+      for(icat in 1:lenCat) {
+        xx <- x$x[x$cuts[[icat]]]
+        yy <- x[[idem]][[icat]][, x$cuts[[icat]]]
+        polygon(x = c(xx, rev(xx)), 
+                y = c(yy[2, ], rev(yy[3, ])), 
+                col = adjustcolor(Palette[icat], alpha.f = 0.25), 
+                border = Palette[icat])
+        lines(x = xx, y = yy[1, ], col = Palette[icat], lty = 3)
+      }
+      if (lenCat > 1 & idem == "surv") {
+        legend(x = 'topright', legend = legNames, 
+               pch = 22, pt.cex = 3, cex = 1.5, 
+               pt.bg = adjustcolor(Palette, alpha.f = 0.25), col = Palette,
+               bty = 'n')
+      }
+      
+      axis(side = 2, at = seq(0, 1, 0.2), tcl = 0.4, las = 2, cex.axis = 1.2)
+      mtext(text = demLab[idem], side = 2, line = 3.5, cex = 1.25)
+      if (idem == "mort") {
+        axis(side = 1, at = seq(0, mxv, 5), labels = NA, tcl = 0.4, line = 0.5)
+      } else {
+        axis(side = 1, at = seq(0, mxv, 5), tcl = 0.4, line = 0.5)
+        mtext(text = expression(paste("Age ", italic(x), " (years)")), 
+              side = 1, cex = 1.25, line = 3) 
+      }
     }
   }
 }
