@@ -1,8 +1,8 @@
 Package: BaSTA
 Type: Package
 Title: Age-Specific Bayesian Survival Trajectory Analysis from Incomplete Census or Capture-Recapture/Recovery Data
-Version: 2.0.0
-Date: 2024-07-05
+Version: 2.0.1
+Date: 2024-07-10
 Authors@R: c(person("Fernando", "Colchero", role = c("aut", "cre"), 
             email = "fernando_colchero@eva.mpg.de"),
             person("Owen", "Jones", role = c("ctb"), 

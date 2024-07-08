@@ -16,8 +16,8 @@
 \tabular{ll}{
 	Package: \tab BaSTA \cr
 	Type: \tab Package\cr
-	Version: \tab 2.0.0\cr
-	Date: \tab 2024-07-05\cr
+	Version: \tab 2.0.1\cr
+	Date: \tab 2024-07-10\cr
 	License: \tab GNU General Public Licence\cr
 	LazyLoad: \tab yes\cr
 }
