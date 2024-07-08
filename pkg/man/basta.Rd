@@ -345,7 +345,7 @@ Spiegelhalter, D.J., Best, N.G., Carlin, B.P. and van der Linde, A. (2002) Bayes
 ## ---------- #
 ## CMR data:
 ## ---------- #
-\dontrun{
+\donttest{
 ## Load data:
 data("bastaCMRdat", package = "BaSTA")
 
@@ -360,7 +360,7 @@ out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70)
 ## ------------- #
 ## Census data:
 ## ------------- #
-\dontrun{
+\donttest{
 ## Load data:
 data("bastaCensDat", package = "BaSTA")
 

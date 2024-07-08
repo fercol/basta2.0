@@ -899,8 +899,6 @@ basta.default <- function(object, dataType = "CMR",
   if (nsim > 1) {
     cat("Multiple simulations started...\n\n") 
     if (parallel) {
-      opp <- options()
-      options(warn = -1)
       sfInit(parallel = TRUE, cpus = ncpus)
       sfExport(list = c(intVars, ".Random.seed"))
       # if (Sys.info()[4] == "ADM-130757-Mac") {
@@ -921,7 +919,6 @@ basta.default <- function(object, dataType = "CMR",
                                    .CalcCumHaz.matrix, .JitterPars)
       sfRemoveAll(hidden = TRUE)
       sfStop()
-      options(opp)
     } else {
       bastaOut <- lapply(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                          parJumps = jumpRun$jumps, ageObj, dataObj,
@@ -1001,6 +998,10 @@ basta.default <- function(object, dataType = "CMR",
 # ---------------------------- #
 plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
                        densities = FALSE, noCIs = FALSE, minSurv = NULL, ...) {
+  # User par settings:
+  oldpar <- par(no.readonly = TRUE)
+  on.exit(par(oldpar))
+  
   # Wrong plot.type:
   if (!plot.type %in% c("traces", "demorates", "gof")) {
     stop("Wrong value for argument 'plot.type'.\nAlternatives are 'traces', 'demorates', or 'gof'.")
@@ -1038,7 +1039,6 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
   } else {
     lty <- 1
   }
-  op <- par(no.readonly = TRUE)
   # ========== #
   # PARAMETERS:
   # ========== #
@@ -1387,7 +1387,6 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       
     }
   }
-  par(op)
 }
 
 # A.4) Printing BaSTA outputs:
@@ -2793,7 +2792,12 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Likelihood function:
-.CalcLike <- function(dataObj, ...) UseMethod(".CalcLike")
+.CalcLike <- function(dataObj, parCovObj, parObj, fullParObj, 
+                      ageObj, likeObj, algObj, ind, 
+                      .CalcMort, .CalcMort.numeric, .CalcMort.matrix, 
+                      .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix,
+                      .CalcCumHaz, .CalcCumHaz.numeric, 
+                      .CalcCumHaz.matrix) UseMethod(".CalcLike")
 
 # .CalcLike.bastacmr <- function(dataObj, parCovObj, parObj, fullParObj, 
 #                                ageObj, likeObj, ind) {
@@ -3180,7 +3184,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # Sampling ages:
 # -------------- #
 # Sample age object:
-.SampleAges <- function(ageObj, ...) UseMethod(".SampleAges")
+.SampleAges <- function(ageObj, dataObj, algObj) UseMethod(".SampleAges")
 
 .SampleAges.agecmr <- function(ageObj, dataObj, algObj) {
   if (dataObj$updA) {
@@ -3319,7 +3323,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 }
 
 # Recalculate ages based on minAge:
-.AssignMinAge <- function(ageObj, ...) UseMethod(".AssignMinAge")
+.AssignMinAge <- function(ageObj, dataObj, algObj) UseMethod(".AssignMinAge")
 
 .AssignMinAge.minAge <- function(ageObj, dataObj, algObj) {
   # Ages after min age:
@@ -3482,8 +3486,10 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   # Create initial age object:
   ageNow <- ageObj
   
+  # Reset the random seed: 
+  runif(sim)
+  
   # Create intial parameters:
-  rm(".Random.seed", envir = .GlobalEnv); runif(1)
   parNow <- .JitterPars(parObj, fullParObj, ageObj, dataObj)
   parCovNow <- .CalcCovPars(parObj = parNow, parCov = NULL, 
                             covObj = covObj, dataObj = dataObj, 
@@ -3510,7 +3516,6 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                          parObj = parNow, dataObj = dataObj, ageObj = ageNow, 
                          covObj = covObj, priorAgeObj = priorAgeObj, 
                          .CalcSurv, .CalcSurv.numeric, .CalcSurv.matrix)
-  # cat("2323, ")
   if (UpdJumps) {
     # Start jumps for Metropolis algorithm:
     niter <- 7500
@@ -3555,7 +3560,6 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   updCount <- parObj
   for (iup in 1:length(updCount)) updCount[[iup]] <- updCount[[iup]] * 0
   
-  # cat("2358, ")
   # Start MCMC:
   for (iter in 1:niter) {
     for (tg in c("theta", 'gamma', "lambda")) {
@@ -3595,7 +3599,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         }
       }
     }
-    # if (iter == 2) cat("2390, ")
+
     # Sample recapture probabilities:
     if (inherits(dataObj, "bastacmr")) {
       parNow <- .SamplePars(parNow, parJumps, fullParObj, dataObj, 
@@ -3615,7 +3619,6 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
                            ind = dataObj$idNoA, .CalcSurv, .CalcSurv.numeric, 
                            .CalcSurv.matrix)
     }
-    # if (iter == 2) cat("2401, ")
     
     # Sample ages:
     if (dataObj$updA) {
@@ -3682,8 +3685,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
         }
       }
     }
-    # if (iter == 2) cat("2439.\n")
-    
+
     # Fill up paramters, likelihood and posterior in output object:
     if (!UpdJumps) {
       if (iter %in% allSeq) {
@@ -3835,7 +3837,8 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     W <- 1 / algObj$nsim * apply(Vars, 2, sum)
     Varpl <- (nthin - 1) / nthin * W + 1 / nthin * B
     Rhat <- sqrt(Varpl / W)
-    Rhat[Varpl==0] <- 1
+    Rhat[which(Varpl == 0)] <- 1
+    Rhat[which(Rhat < 1)] <- 1
     conv <- cbind(B, W, Varpl, Rhat)
     rownames(conv) <- colnames(parMat)
     coeffs <- cbind(coeffs, conv[, 'Rhat'])
