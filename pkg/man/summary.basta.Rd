@@ -124,11 +124,11 @@ plot(bastaCMRout, plot.trace = FALSE, xlim = c(2, 8),
 
 ## Plot parameter densities and predicted vital  
 ## rates in the same plot (i.e. fancy):
-plot(bastaCMRout, fancy = TRUE)
+plot(bastaCMRout, plot.type = "fancy",)
 
 ## Change colors and legend names for the 
 ## "fancy" plot:
-plot(bastaCMRout, fancy = TRUE, col = c("dark green", "dark blue"),
+plot(bastaCMRout, plot.type = "fancy", col = c("dark green", "dark blue"),
      names.legend = c("Females", "Males"))
 }
 
