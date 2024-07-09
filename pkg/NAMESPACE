@@ -2,7 +2,8 @@
 export("basta", "basta.default", "print.basta", "summary.basta", 
        "DataCheck", "summary.bastaCheckCMR", "summary.bastaCheckCens", 
        "print.bastaCheckCMR", "print.bastaCheckCens", "FixCMRdata",
-       "CensusToCaptHist")
+       "CensusToCaptHist", "multibasta", "summary.multibasta", 
+       "print.multibasta", "coef.multibasta")
 
 # Import package snowfall
 import("snowfall")
@@ -21,5 +22,8 @@ S3method("summary", "basta")
 S3method("plot", "basta")
 S3method("summary", "bastaCheckCMR")
 S3method("summary", "bastaCheckCens")
+S3method("summary", "multibasta")
 S3method("print", "bastaCheckCMR")
 S3method("print", "bastaCheckCens")
+S3method("print", "multibasta")
+S3method("coef", "multibasta")

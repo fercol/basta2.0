@@ -12,7 +12,7 @@ These functions allow users visualize the output from function \code{multibasta}
 \usage{
 \method{summary}{multibasta}(object, \dots)
 \method{print}{multibasta}(x, \dots)
-\method{coef}{multibasta}(x, showAll = FALSE, \dots)
+\method{coef}{multibasta}(object, showAll = FALSE, \dots)
 }
 
 \arguments{
@@ -45,17 +45,20 @@ Fernando Colchero \email{colchero@imada.sdu.dk}, Owen R. Jones \email{jones@biol
 }
 
 \examples{
+\donttest{
 ## Load data:
-data("sim1", package = "BaSTA")
+data("bastaCMRdat", package = "BaSTA")
 
 ## Run short version of BaSTA on the data:
-multiout <- multibasta(sim1, studyStart = 51, studyEnd = 70, 
+multiout <- multibasta(bastaCMRdat, studyStart = 51, studyEnd = 70, 
                  models = c("GO", "WE"), shapes = "simple",
                  niter = 100, burnin = 11, thinning = 10, 
                  nsim = 1, updateJumps = FALSE, parallel = FALSE)
 
 ## Print results:
 summary(multiout, digits = 3)
+
+}
 }
 
 \keyword{ methods }

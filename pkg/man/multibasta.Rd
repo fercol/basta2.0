@@ -1,7 +1,5 @@
 \name{multibasta}
 \alias{multibasta}
-\alias{summary.multibasta}
-\alias{print.multibasta}
 \title{
 Function to run multiple BaSTA models on the same dataset.
 }
@@ -262,7 +260,7 @@ Fernando Colchero \email{fernando_colchero@eva.mpg.de}
 }
 
 \seealso{
-\code{\link{basta}}, as well as \code{\link{CensusToCaptHist}} and \code{\link{MakeCovMat}} for raw data formatting.
+\code{\link{basta}}, as well as \code{\link{CensusToCaptHist}} for raw data formatting.
 }
 
 \examples{
@@ -271,7 +269,7 @@ Fernando Colchero \email{fernando_colchero@eva.mpg.de}
 data("bastaCMRdat", package = "BaSTA")
 
 ## Run short version of BaSTA on the data:
-multiout <- multibasta(sim1, studyStart = 51, studyEnd = 70, 
+multiout <- multibasta(bastaCMRdat, studyStart = 51, studyEnd = 70, 
                  models = c("GO", "WE"), shapes = "simple",
                  niter = 100, burnin = 11, thinning = 10, 
                  nsim = 1, updateJumps = FALSE, parallel = FALSE)

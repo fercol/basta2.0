@@ -1722,46 +1722,64 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # Main multibasta:
 multibasta <- function(object, dataType = "CMR", models, 
                        shapes, ...) {
+  # Extract arguments:
   argList <- list(...)
-  if (is.null(argList$nsim)) nsim <- 2 else nsim <- argList$nsim
+  argNames <- names(argList)
+  print(argNames)
+  
+  # Models available:
   mods <- rbind(data.frame(model = "EX", shape = "simple"),
                 expand.grid(model = c("GO", "WE", "LO"), 
                             shape = c("simple", "Makeham", "bathtub")))
   
+  # Abreviations for models and shapes:
   modsAbr <- rbind(data.frame(model = "Ex", shape = "Si"),
                    expand.grid(model = c("Go", "We", "Lo"), 
                                shape = c("Si", "Ma", "Bt")))
+  
+  # Alternative is models and shape are missing (i.e. run all):
   if (missing(models)) models <- c("EX", "GO", "WE", "LO")
   if (missing(shapes)) shapes <- c("simple", "Makeham", "bathtub")
+  
+  # Models request by user:
   idIncl <- which(mods$model %in% models & mods$shape %in% shapes)
   mods <- mods[idIncl, ]
   modsAbr <- modsAbr[idIncl, ]
   nmod <- nrow(mods)
   modNames <- paste(modsAbr$model, modsAbr$shape, sep = ".")
-  if (nsim > 1) DIC <- TRUE else DIC <- FALSE
+
+  # Define nsim:
+  if (!"nsim" %in% argNames) {
+    argList$nsim <- 2
+  }
+  
+  # Logical whether DICs can be calculated:
+  if (argList$nsim > 1) DIC <- TRUE else DIC <- FALSE
+  
+  # DIC matrix:
   if (DIC) {
     dics <- matrix(NA, nmod, 5, dimnames = 
                      list(modNames, c("D.ave", "D.mode", "pD", "k", "DIC")))
   }
+  
+  # list for models ran:
   runList <- list()
+  
+  # Run models:
   for (mod in 1:nmod) {
     updt <- sprintf("Run number %s, model: %s", mod, modNames[mod])
     cat(paste("\n", paste(rep("-", nchar(updt)), collapse = ""), sep = ""))
     cat(sprintf("\n%s\n", updt))
     cat(paste(paste(rep("-", nchar(updt)), collapse = ""), "\n", sep = ""))
-    if (is.null(argList$nsim)) {
-      out <- basta(object, dataType = dataType, studyStart, studyEnd, 
-                   model = mods$model[mod], 
-                   shape = mods$shape[mod], nsim = nsim, ...)
-    } else {
-      out <- basta(object, dataType = dataType,  model = mods$model[mod], 
-                   shape = mods$shape[mod], ...)
-    }
+    out <- basta(object, dataType = dataType, model = mods$model[mod], 
+                 shape = mods$shape[mod], ...)
     runList[[modNames[mod]]] <- out
     if (DIC & out$DIC[1] != "Not calculated") {
       dics[mod, ] <- out$DIC
     }
   }
+  
+  # Fill up DIC matrix:
   if (DIC) {
     idNa <- which(is.na(dics[, "DIC"]))
     idnNa <- which(!is.na(dics[, "DIC"]))
@@ -1776,6 +1794,8 @@ multibasta <- function(object, dataType = "CMR", models,
     modFit <- data.frame(DICs = "Not Calculated")
     idModFit <- NA
   }
+  
+  # Results list:
   results <- list(runs = runList[idModFit], DICs = modFit, models = mods)
   class(results) <- "multibasta"
   return(results)
