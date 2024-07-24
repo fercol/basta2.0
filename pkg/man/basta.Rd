@@ -354,7 +354,8 @@ checkedData <- DataCheck(bastaCMRdat, dataType = "CMR",
                               studyStart = 51, studyEnd = 70)
 
 ## Run short version of BaSTA on the data:
-out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70)
+out <- basta(bastaCMRdat, studyStart = 51, studyEnd = 70, 
+             formulaMort = ~ Sex + Weight - 1)
 }
 
 ## ------------- #
@@ -368,7 +369,7 @@ data("bastaCensDat", package = "BaSTA")
 checkedData <- DataCheck(bastaCensDat, dataType = "census")
 
 ## Run short version of BaSTA on the data:
-out <- basta(bastaCensDat, dataType = "census")
+out <- basta(bastaCensDat, dataType = "census", formulaMort = ~ Sex - 1)
 }
 
 \dontshow{

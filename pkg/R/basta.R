@@ -1616,7 +1616,7 @@ summary.basta <- function(object, ...){
       if (object$set['nsim'] == 1) {
         message("\nConvergence calculations require more than one run.",
             "\nTo estimate potential scale reduction run at least",
-            "two simulations.\n")
+            " two simulations.\n")
       } else {
         cat("\nWarning: Convergence not reached for some parameters",
             " (i.e. 'PotScaleReduc' values larger than 1.1).",
