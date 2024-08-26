@@ -1538,8 +1538,8 @@ print.basta <- function(x, ...) {
   cat("\nCall:\n")
   cat(paste("Model             \t\t: ", x$modelSpecs[1], "\n", sep = ""))
   cat(paste("Shape             \t\t: ", x$modelSpecs[2], "\n", sep = ""))
-  cat(paste("Minimum age       \t\t: ", x$modelSpecs[4], "\n", sep = ""))
-  cat(paste("Covars. structure \t\t: ", x$modelSpecs[3], "\n", sep = ""))
+  cat(paste("Minimum age       \t\t: ", x$modelSpecs[3], "\n", sep = ""))
+  cat(paste("Covars. structure \t\t: ", x$modelSpecs[4], "\n", sep = ""))
   cat(paste("Cat. covars.      \t\t: ", x$modelSpecs[5], "\n", sep = ""))
   cat(paste("Cont. covars.     \t\t: ", x$modelSpecs[6], "\n", 
             collapse = ""))
@@ -1574,12 +1574,12 @@ summary.basta <- function(object, ...){
       cat(sprintf("\nOutput from BaSTA version %s\n", object$version))
     }
     cat("\nCall:\n")
-    cat(paste("Model             \t\t: ", object$modelSpecs[1], "\n", sep = ""))
-    cat(paste("Shape             \t\t: ", object$modelSpecs[2], "\n", sep = ""))
-    cat(paste("Covars. structure \t\t: ", object$modelSpecs[4], "\n", sep = ""))
-    cat(paste("Minimum age       \t\t: ", object$modelSpecs[3], "\n", sep = ""))
-    cat(paste("Cat. covars.      \t\t: ", object$modelSpecs[5], "\n", sep = ""))
-    cat(paste("Cont. covars.     \t\t: ", object$modelSpecs[6], "\n", 
+    cat(paste("Model             \t\t: ", x$modelSpecs[1], "\n", sep = ""))
+    cat(paste("Shape             \t\t: ", x$modelSpecs[2], "\n", sep = ""))
+    cat(paste("Minimum age       \t\t: ", x$modelSpecs[3], "\n", sep = ""))
+    cat(paste("Covars. structure \t\t: ", x$modelSpecs[4], "\n", sep = ""))
+    cat(paste("Cat. covars.      \t\t: ", x$modelSpecs[5], "\n", sep = ""))
+    cat(paste("Cont. covars.     \t\t: ", x$modelSpecs[6], "\n", 
               collapse = ""))
     
     cat("\nModel settings:\n")
