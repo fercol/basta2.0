@@ -1576,8 +1576,8 @@ summary.basta <- function(object, ...){
     cat("\nCall:\n")
     cat(paste("Model             \t\t: ", object$modelSpecs[1], "\n", sep = ""))
     cat(paste("Shape             \t\t: ", object$modelSpecs[2], "\n", sep = ""))
-    cat(paste("Covars. structure \t\t: ", object$modelSpecs[3], "\n", sep = ""))
-    cat(paste("Minimum age       \t\t: ", object$modelSpecs[4], "\n", sep = ""))
+    cat(paste("Covars. structure \t\t: ", object$modelSpecs[4], "\n", sep = ""))
+    cat(paste("Minimum age       \t\t: ", object$modelSpecs[3], "\n", sep = ""))
     cat(paste("Cat. covars.      \t\t: ", object$modelSpecs[5], "\n", sep = ""))
     cat(paste("Cont. covars.     \t\t: ", object$modelSpecs[6], "\n", 
               collapse = ""))
