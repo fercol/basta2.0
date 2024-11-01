@@ -1773,7 +1773,7 @@ multibasta <- function(object, dataType = "CMR", models,
     out <- basta(object, dataType = dataType, model = mods$model[mod], 
                  shape = mods$shape[mod], ...)
     runList[[modNames[mod]]] <- out
-    if (DIC & out$DIC[1] != "Not calculated") {
+    if (DIC & !is.na(out$DIC[1])) {
       dics[mod, ] <- out$DIC
     }
   }
