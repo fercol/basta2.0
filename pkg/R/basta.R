@@ -1724,7 +1724,6 @@ multibasta <- function(object, dataType = "CMR", models,
   # Extract arguments:
   argList <- list(...)
   argNames <- names(argList)
-  print(argNames)
   
   # Models available:
   mods <- rbind(data.frame(model = "EX", shape = "simple"),
