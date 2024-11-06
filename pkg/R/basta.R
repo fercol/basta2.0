@@ -4619,10 +4619,10 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   ageLastb[idsame] <- ageLast[idsame] + 1/365.25
 
   # Sort ages:
-  idsort <- sort.int(ageLast, index.return = TRUE)$ix
+  idsort <- sort.int(ageLastb, index.return = TRUE)$ix
 
   # Create new age vector (sorted):
-  agev <- ageLastb[idsort]
+  agev <- unique(ageLastb[idsort])
 
   # Number of ages:
   nage <- length(agev)
@@ -4635,7 +4635,8 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   for (ii in 1:nage) {
     idNx <- which(ageFirst <= agev[ii] & ageLastb >= agev[ii])
     Cx[ii] <- length(idNx)
-    if (departType[idsort[ii]] == "D") delx[ii] <- 1
+    idd <- which(ageLast == agev[ii] & departType == "D")
+    delx[ii] <- length(idd)
   }
 
   # Calculate product limit estimator:
