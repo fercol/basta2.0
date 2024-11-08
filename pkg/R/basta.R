@@ -2038,21 +2038,32 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   else {
     n <- nrow(object)
     # Calculate Julian times:
-    bi <- round(as.numeric(as.Date(object$Birth.Date, 
-                                   format = "%Y-%m-%d")) / 
-                  365.25, 2) + 1970
-    bil <- round(as.numeric(as.Date(object$Min.Birth.Date, 
-                                    format = "%Y-%m-%d")) /
-                   365.25, 2) + 1970
-    biu <- round(as.numeric(as.Date(object$Max.Birth.Date, 
-                                    format = "%Y-%m-%d")) /
-                   365.25, 2) + 1970
-    firstObs <- round(as.numeric(as.Date(object$Entry.Date, 
-                                      format = "%Y-%m-%d")) /
-                     365.25, 2) + 1970
-    lastObs <- round(as.numeric(as.Date(object$Depart.Date, 
-                                       format = "%Y-%m-%d")) /
-                      365.25, 2) + 1970
+    # bi <- round(as.numeric(as.Date(object$Birth.Date, 
+    #                                format = "%Y-%m-%d")) / 
+    #               365.25, 2) + 1970
+    # bil <- round(as.numeric(as.Date(object$Min.Birth.Date, 
+    #                                 format = "%Y-%m-%d")) /
+    #                365.25, 2) + 1970
+    # biu <- round(as.numeric(as.Date(object$Max.Birth.Date, 
+    #                                 format = "%Y-%m-%d")) /
+    #                365.25, 2) + 1970
+    # firstObs <- round(as.numeric(as.Date(object$Entry.Date, 
+    #                                   format = "%Y-%m-%d")) /
+    #                  365.25, 2) + 1970
+    # lastObs <- round(as.numeric(as.Date(object$Depart.Date, 
+    #                                    format = "%Y-%m-%d")) /
+    #                   365.25, 2) + 1970
+
+    bi <- as.numeric(as.Date(object$Birth.Date, 
+                             format = "%Y-%m-%d")) / 365.25 + 1970
+    bil <- as.numeric(as.Date(object$Min.Birth.Date, 
+                              format = "%Y-%m-%d")) / 365.25 + 1970
+    biu <- as.numeric(as.Date(object$Max.Birth.Date, 
+                              format = "%Y-%m-%d")) / 365.25 + 1970
+    firstObs <- as.numeric(as.Date(object$Entry.Date, 
+                                   format = "%Y-%m-%d")) / 365.25 + 1970
+    lastObs <- as.numeric(as.Date(object$Depart.Date, 
+                                  format = "%Y-%m-%d")) / 365.25 + 1970
     
     # Entry and departure types:
     entryType <- as.character(object$Entry.Type)
@@ -4603,9 +4614,14 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   # Number of records:
   n <- length(ageLast)
 
+  # Avoid minor rounding errors:
+  ageLast <- round(ageLast, 8)
+  
   # Set age first to 0 if NULL:
   if (is.null(ageFirst)) {
     ageFirst <- rep(0, n)
+  } else {
+    ageFirst <- round(ageFirst, 8)
   }
 
   # ------------------------ #
@@ -4635,7 +4651,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   for (ii in 1:nage) {
     idNx <- which(ageFirst <= agev[ii] & ageLastb >= agev[ii])
     Cx[ii] <- length(idNx)
-    idd <- which(ageLast == agev[ii] & departType == "D")
+    idd <- which(ageLastb == agev[ii] & departType == "D")
     delx[ii] <- length(idd)
   }
 
