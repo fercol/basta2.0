@@ -996,21 +996,38 @@ basta.default <- function(object, dataType = "CMR",
 # A.3) plotting and printing BaSTA outputs:
 # ----------------------------------------- #
 # Plotting:
-plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
-                       densities = FALSE, noCIs = FALSE, minSurv = NULL, ...) {
+plot.basta <- function(x, type = "traces", trace.name = "theta",
+                       noCIs = FALSE, minSurv = NULL, ...) {
+  # Additional arguments:
+  args <- list(...)
+  namesArgs <- names(args)
+  
+  # -------------------------- #
+  # ---- Legacy arguments ---- #
+  # find whether plot.type was used:
+  if ("plot.type" %in% namesArgs) {
+    type <- args$plot.type
+  }
+  
+  # Find whether densities were specified:
+  if ("densities" %in% namesArgs) {
+    type <- "densities"
+  }
+  # ---- End of legacy arguments ---- #
+  # --------------------------------- #
+  
   # User par settings:
   oldpar <- par(no.readonly = TRUE)
   on.exit(par(oldpar))
   
-  # Wrong plot.type:
-  if (!plot.type %in% c("traces", "demorates", "gof", "fancy")) {
-    stop("Wrong value for argument 'plot.type'.\nAlternatives are 'traces', 'demorates', 'gof', or 'fancy'.")
+  # Wrong type:
+  if (!type %in% c("traces", "densities", "demorates", "gof", "fancy")) {
+    stop("Wrong value for argument 'type'.\nAlternatives are 'traces', 'demorates', 'densities', 'gof', or 'fancy'.")
   }
   
-  args <- list(...)
-  nv <- ifelse(plot.type == "traces", x$settings['nsim'], length(x$surv))
+  nv <- ifelse(type == "traces", x$settings['nsim'], length(x$surv))
   
-  if ("col" %in% names(args)) {
+  if ("col" %in% namesArgs) {
     Palette <- args$col
     if (length(Palette) < nv) {
       warning("Insufficient number of colors. Not all traces will be displayed.",
@@ -1024,22 +1041,22 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       Palette <- rainbow(nv)
     }
   }
-  if ("lwd" %in% names(args)) {
+  if ("lwd" %in% namesArgs) {
     lwd <- args$lwd
   } else {
     lwd <- 1
   }
-  if ("lty" %in% names(args)) {
+  if ("lty" %in% namesArgs) {
     lty <- args$lty
   } else {
     lty <- 1
   }
   
-  if (plot.type %in% c("demorates", "fancy")) {
+  if (type %in% c("demorates", "fancy")) {
     catNames <- names(x$mort)
     lenCat <- length(catNames)
     
-    if ("names.legend" %in% names(args)) {
+    if ("names.legend" %in% namesArgs) {
       if (length(args$names.legend) != nv) {
         stop(sprintf("Wrong length in 'names.legend'. Correct length is %s elements.",
                      nv), call. = FALSE)
@@ -1054,12 +1071,12 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
   # ========== #
   # PARAMETERS:
   # ========== #
-  if (plot.type == "traces") {
+  if (type %in% c("traces", "densities")) {
     nsim <- x$settings["nsim"]
     # ----------- #
     # densities:
     # ---------- #
-    if (densities) {
+    if (type == "densities") {
       if (trace.name == "theta") {
         if (x$covs$class %in% c("fused", "inMort")) {
           if (!is.na(x$covs$cat[1])) {
@@ -1220,13 +1237,13 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
     # =========== #
     # DEMO RATES:
     # =========== #
-  } else if (plot.type == "demorates") {
+  } else if (type == "demorates") {
     par(mfrow = c(2, 1), mar = c(4, 4, 1, 1)) 
     demvname <- c("Mortality", "Survival")
     names(demvname) <- c("mort", "surv")
     for (demv in c("mort", "surv")) {
       ylim <- c(0, 0)
-      if ("xlim" %in% names(args)) {
+      if ("xlim" %in% namesArgs) {
         xlim <- args$xlim
       } else {
         xlim <- c(0, 0)
@@ -1240,7 +1257,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
         }
         ylim <- range(c(ylim, x[[demv]][[icat]][, cuts]), 
                       na.rm = TRUE)
-        if (! "xlim" %in% names(args)) {
+        if (! "xlim" %in% namesArgs) {
           xlim <- range(c(xlim, x$x[cuts] + minAge), na.rm = TRUE)
         }
       }
@@ -1277,7 +1294,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
     # ================ #
     # GOODNESS OF FIT: 
     # ================ #
-  } else if (plot.type == "gof") {
+  } else if (type == "gof") {
     ncat <- length(x$surv)
     catname <- names(x$surv)
     pcol <- ceiling(ncat / 2)
@@ -1295,7 +1312,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       } else {
         cuts <- which(x$surv[[icat]][1, ] >= minSurv)
       }
-      if (! "xlim" %in% names(args)) {
+      if (! "xlim" %in% namesArgs) {
         xlim <- range(c(xlim, x$x[cuts] + minAge), na.rm = TRUE)
       } else {
         xlim <- args$xlim
@@ -1393,7 +1410,7 @@ plot.basta <- function(x, plot.type = "traces", trace.name = "theta",
       # ================================ #
       
     }
-  } else if (plot.type == "fancy") {
+  } else if (type == "fancy") {
     allThetaNames <- c("a0", "a1", "c", "b0", "b1", "b2")
     allThetaExpr  <- expression(italic(a[0]), italic(a[1]), italic(c), 
                                 italic(b[0]), italic(b[1]), italic(b[2]))

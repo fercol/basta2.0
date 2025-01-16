@@ -19,9 +19,9 @@ data("bastaCensOut", package = "BaSTA")
 plot(bastaCensOut)
 
 ## Plot posterior densities of survival parameters:
-plot(bastaCensOut, densities = TRUE)
+plot(bastaCensOut, type = "densities")
 
 ## Plot survival and mortality curves:
-plot(bastaCensOut, plot.type = "demorates")
+plot(bastaCensOut, type = "demorates")
 }
 \keyword{model output}

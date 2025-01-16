@@ -20,12 +20,12 @@ data("bastaCMRout", package = "BaSTA")
 plot(bastaCMRout)
 
 ## Plot posterior densities of survival parameters:
-plot(bastaCMRout, densities = TRUE)
+plot(bastaCMRout, type = "densities")
 
 ## Plot traces for proportional hazards parameter:
 plot(bastaCMRout, trace.name = "gamma")
 
 ## Plot survival and mortality curves:
-plot(bastaCMRout, plot.type = "demorates")
+plot(bastaCMRout, type = "demorates")
 }
 \keyword{model output}

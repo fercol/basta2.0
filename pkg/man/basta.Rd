@@ -373,8 +373,8 @@ out <- basta(bastaCensDat, dataType = "census", formulaMort = ~ Sex - 1)
 }
 
 \dontshow{
-data("bastaCMRout", package = "BaSTA")
-out <- bastaCensDat
+data("bastaCensOut", package = "BaSTA")
+out <- bastaCensOut
 }
 
 ## --------------------- #
@@ -387,10 +387,10 @@ summary(out, digits = 3)
 plot(out)
 
 ## Plot posterior densities of survival parameters:
-plot(out, densities = TRUE)
+plot(out, type = "densities")
 
 ## Plot survival and mortality curves:
-plot(out, plot.type = "demorates")
+plot(out, type = "demorates")
 
 }
 

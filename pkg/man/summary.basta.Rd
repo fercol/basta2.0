@@ -12,8 +12,8 @@ These functions are all generic methods for class \code{basta}.
 \usage{
 \method{summary}{basta}(object, \dots)
 \method{print}{basta}(x, \dots)
-\method{plot}{basta}(x, plot.type = "traces", trace.name = "theta",
-                       densities = FALSE, noCIs = FALSE, minSurv = NULL,
+\method{plot}{basta}(x, type = "traces", trace.name = "theta",
+                       noCIs = FALSE, minSurv = NULL,
                        \dots)
 }
 \arguments{
@@ -21,11 +21,9 @@ These functions are all generic methods for class \code{basta}.
   
   \item{x }{An object of class \code{basta}.}
 
-  \item{plot.type }{A character vector indicating the type of plot to be produced. Options are: \dQuote{\code{traces}} for the MCMC traces; \dQuote{\code{demorates}} for the resulting survival and mortality curves; and \dQuote{\code{gof}} for a comparison between the estimated parametric survival function and the life table \code{lx} variable. }
+  \item{type }{A character vector indicating the type of plot to be produced. Options are: \dQuote{\code{traces}} for the MCMC traces; \dQuote{\code{densities}} for posterior parameter densities; \dQuote{\code{demorates}} for the resulting survival and mortality curves; \dQuote{\code{gof}} for a comparison between the estimated parametric survival function and the life table \code{lx} variable; and \dQuote{\code{fancy}} for a combined densities and survival and mortality plots. }
   
   \item{trace.name }{Character string indicating the set of parameters or posteriors to be plotted. The options are: \dQuote{\code{theta}} to plot the survival model parameters; \dQuote{\code{gamma}} to plot the proportional hazards parameters (if it applies, else \code{plot.basta} returns an error); \dQuote{\code{pi}} to plot the recapture probabilities.}
-  
-  \item{densities }{Logical indicating whether to plot the parameter posterior densities instead of the traces.}
   
   \item{noCIs }{Logical indicating whether the 95\% credible intervals should be included in the plot.}
   
@@ -40,9 +38,11 @@ The summary element \code{coefficients} prints out the estimated coefficients fo
 
 Function \code{summary} includes all the previous elements, as well as a summary description of the priors and jump standard deviations for all survival parameters, a calibration of the Kullback-Leibler discrepancy as a measure of parameter similarities for those parameters associated to categorical covariates (McCulloch 1989), and a measure of model fit based on the deviance information criterion (DIC) (Spiegelhalter \emph{et al.} 2002). 
 
-Function \code{plot} takes objects of class \code{basta} to create trace plots or, if the argument for \code{plot.type} is set to \dQuote{\code{demorates}}, it plots estimated survival probabilities and mortality rates with their 95\% predictive intervals. If argument \code{plot.trace} is set to \code{FALSE}, argument \code{xlim} can be used to define a range of ages to visualize survival and mortality trends. Also, if logical argument \code{noCI} is set to \code{TRUE}, credible intervals around survival and mortality are not plotted, leaving only the mean trends. This can be handy when several categorical covariates have been evaluated and the plots get too crowded.  
+Function \code{plot} takes objects of class \code{basta} to create trace plots of the estimated parameters (default) or, if the argument for \code{type} is set to \dQuote{\code{demorates}}, it plots estimated survival probabilities and mortality rates with their 95\% predictive intervals. Argument \code{xlim} can be used to define a range of ages to visualize survival and mortality trends. Also, if logical argument \code{noCI} is set to \code{TRUE}, credible intervals around survival and mortality are not plotted, leaving only the mean trends. This can be handy when several categorical covariates have been evaluated and the plots become too crowded.  
 
-Other arguments for \code{plot} include \code{names.legend} to indicate alternative names for the legend of vital rates plots. Also, when \code{plot.trace} is \code{FALSE}, argument \code{xlim} can be changed to display only a subest of the support. When argument \code{noCI} is \code{TRUE}, then the credible intervals around the vital rates are not displayed.
+Other arguments for \code{plot} include \code{names.legend} to indicate alternative names for the legend of vital rates plots. Also, argument \code{xlim} can be changed to display only a subest of the support. When argument \code{noCI} is \code{TRUE}, then the credible intervals around the vital rates are not displayed. In addition, argument \code{lwd} can be used to change the width of the survival and mortality mean lines.
+
+For consistency with previous versions, arguments \code{plot.type} and \code{densities} can still be used instead of \code{type}. 
 }
 
 \value{ 
@@ -100,35 +100,35 @@ plot(bastaCMRout, trace.name = "gamma")
 plot(bastaCMRout, trace.name = "pi")
 
 ## Plot predicted mortality and survival:
-plot(bastaCMRout, plot.type = "demorates")
+plot(bastaCMRout, type = "demorates")
 
 ## Change the color for each covariate on 
 ## the predicted vital rates:
-plot(bastaCMRout, plot.type = "demorates", 
+plot(bastaCMRout, type = "demorates", 
      col = c("dark green", "dark blue"))
 
 ## Change the color and the legend text:
-plot(bastaCMRout, plot.type = "demorates", 
+plot(bastaCMRout, type = "demorates", 
      col = c("dark green", "dark blue"),
      names.legend = c("Females", "Males"))
 
 ## Plot predicted mortality and survival 
 ## between 2 and 8 years of age:
-plot(bastaCMRout, plot.trace = FALSE, xlim = c(2, 8))
+plot(bastaCMRout, type = "demorates", xlim = c(2, 8))
 
 ## Plot predicted mortality and survival 
 ## between 2 and 8 years of age without
 ## credible intervals:
-plot(bastaCMRout, plot.trace = FALSE, xlim = c(2, 8), 
+plot(bastaCMRout, type = "demorates", xlim = c(2, 8), 
      noCI = TRUE)
 
 ## Plot parameter densities and predicted vital  
 ## rates in the same plot (i.e. fancy):
-plot(bastaCMRout, plot.type = "fancy",)
+plot(bastaCMRout, type = "fancy")
 
 ## Change colors and legend names for the 
 ## "fancy" plot:
-plot(bastaCMRout, plot.type = "fancy", col = c("dark green", "dark blue"),
+plot(bastaCMRout, type = "fancy", col = c("dark green", "dark blue"),
      names.legend = c("Females", "Males"))
 }
 
