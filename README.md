@@ -13,13 +13,13 @@ This is the next installment of the R package BaSTA, with several new and improv
 - Includes summary statistics such as remaining life expectancy, lifespan inequality, lifespan equality;
 
 ## How to install BaSTA version 2.0.0?
-BaSTA version 2.0.0 is now available in CRAN. To install it from CRAN, simply type to the console
+BaSTA version 2.0.1 is now available in CRAN. To install it from CRAN, simply type to the console
 ```R
 install.packages("BaSTA")
 ```
 
 ## How to install BaSTA version 2.0.1?
-To install BaSTA version 2.0.1 from GitHub, type the following lines of code on the R console:
+To install the latest development version of BaSTA from GitHub, type the following lines of code on the R console:
 
 ```R
 # Install and load 'devtools':
