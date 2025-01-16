@@ -11,14 +11,16 @@ This is the next installment of the R package BaSTA, with several new and improv
 - Plots for goodness of fit on survival and mortality;
 - Allows users to specify minimum and maximum birth and death to improve estimation;
 - Includes summary statistics such as remaining life expectancy, lifespan inequality, lifespan equality;
+- Allows to produce `fancy` plots as in version 1.9.5;
+- Includes function `multibasta()` to test multiple mortality functions.
 
-## How to install BaSTA version 2.0.0?
+## How to install BaSTA version 2.0.1?
 BaSTA version 2.0.1 is now available in CRAN. To install it from CRAN, simply type to the console
 ```R
 install.packages("BaSTA")
 ```
 
-## How to install BaSTA version 2.0.1?
+## How to install development versions of BaSTA?
 To install the latest development version of BaSTA from GitHub, type the following lines of code on the R console:
 
 ```R
