@@ -2697,7 +2697,14 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
 # a) General mortality functions:
 .DefineMortMatrix <- function(algObj) {
   if (algObj$model == "EX") {
-    mortfun <- function(theta, x) rep(theta, length(x))
+    mortfun <- function(theta, x) {
+      if (length(theta) == length(x)) {
+        mux <- theta
+      } else {
+        mux <- rep(theta, length(x))
+      }
+      return(mux)
+    }
   } else if (algObj$model == "GO") {
     if (algObj$shape == "simple") {
       mortfun <- function(theta, x) {
@@ -2769,7 +2776,14 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
 
 .DefineMortNumeric <- function(algObj) {
   if (algObj$model == "EX") {
-    mortfun <- function(theta, x) rep(theta, length(x))
+    mortfun <- function(theta, x) {
+      if (length(theta) == length(x)) {
+        mux <- theta
+      } else {
+        mux <- rep(theta, length(x))
+      }
+      return(mux)
+    }
   } else if (algObj$model == "GO") {
     if (algObj$shape == "simple") {
       mortfun <- function(theta, x) {
@@ -4050,6 +4064,9 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   cat("Calculating summary statistics...")
   nthin <- outidObj$nKeep
   parMat <- bastaOut[[1]]$theta[outidObj$idKeep, ]
+  # if (inherits(parMat, "numeric")) {
+  #   parMat <- matrix(parMat, ncol = 1)
+  # }
   parnames <- fullParObj$theta$names
   idTheta <- 1:ncol(bastaOut[[1]]$theta)
   likePost <- bastaOut[[1]]$likePost[outidObj$idKeep, ]
@@ -4107,11 +4124,13 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
         tempUpd <- c(tempUpd, bastaOut[[sim]]$update$pi)
       }
       
-      if (is.matrix(parMat)) {
+      if (inherits(parMat, "matrix")) {
         parMat <- rbind(parMat, pmat)
       } else {
         parMat <- c(parMat, pmat)
-        parMat <- matrix(parMat, ncol = 1)
+        if (sim == nsim) {
+          parMat <- matrix(parMat, ncol = 1)
+        }
       }
       likePost <- rbind(likePost, bastaOut[[sim]]$likePost[outidObj$idKeep, ])
       updVec <- updVec + tempUpd
@@ -4131,6 +4150,9 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   if (nsim > 1) {
     
     idSims <- rep(1:algObj$nsim, each = nthin)
+    if (inherits(parMat, "numeric")) {
+      parMat <- matrix(parMat, ncol = 1)
+    }
     Means <- apply(parMat, 2, function(x) 
       tapply(x, idSims, mean))
     Vars <- apply(parMat, 2, function(x) 
