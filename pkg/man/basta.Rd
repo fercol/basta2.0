@@ -66,7 +66,7 @@ basta(object, \dots)
 }
 
 \details{
-\bold{1) DATA TYPES:}
+\bold{1) DATA TYPES}
 
 The input \code{object} required by BaSTA needs to be constructed differently whether the data are of capture-mark-recapture or census. 
 
@@ -79,7 +79,7 @@ If \code{dataType} = \dQuote{\code{CMR}}, then the data frame requires the follo
 If \code{dataType} = \dQuote{\code{census}}, then the input data \code{object} requires at least five dates columns, namely \dQuote{Birth.Date}, \dQuote{Min.Birth.Date}, \dQuote{Max.Birth.Date}, \dQuote{Entry.Date}, and \dQuote{Depart.Date}. All dates need to be format as \dQuote{\%Y-\%m-\%d}. In addition, a \dQuote{Depart.Type} column is required with two types of departures \dQuote{C} for Censored and \dQuote{D} for dead (see \code{\link{bastaCensDat}} for a census dataset example).
 
 
-\bold{2) AGE-SPECIFIC MORTALITY MODELS:}
+\bold{2) AGE-SPECIFIC MORTALITY MODELS}
 
 \code{basta} performs Bayesian inference on parametric age-specific mortality and survival when not all ages are known (Colchero and Clark 2012, Colchero \emph{et al.} 2012, Colchero \emph{et al.} 2021). The mortality function describes how the risk of mortality changes with age, and is defined as 
 \deqn{
@@ -167,7 +167,7 @@ The most widely use \dQuote{\code{bathtub}} shaped model is the \bold{Siler mort
 \preformatted{basta(..., model = "GO", shape = "bathtub", ...)}
 
 
-\bold{3) COVARIATES:}
+\bold{3) COVARIATES}
 
 Covariates are selected by means of the argument \code{formulaMort}, which requires an object of class formula, just as with other statistical inference functions such as \code{lm} or \code{glm}.
 
@@ -189,7 +189,7 @@ where \eqn{\mu_0(x | \theta, Z_a)} represents the baseline mortality as defined 
 
 This specification will put all covariates as linear functions of the survival parameters as explained above. Since most models require the lower bounds for the mortality parameters to be equal to 0, the only model that can be used for this test is Gompertz with \code{shape} set to \dQuote{\code{simple}}. In case these arguments are specified differently, a warning message is printed noting that \code{model} will be forced to be \dQuote{\code{GO}} and \code{shape} will be set to \dQuote{\code{simple}}.
 
-\code{4) MCMC SETTINGS:}
+\bold{4) MCMC SETTINGS}
 
 The \code{burnin} argument represents the number of steps at the begining of the MCMC run that is be discarded. This sequence commonly corresponds to the non-converged section of the MCMC sequence. Convergence and model selection measures are calculated from the remaining thinned parameter chains if multiple simulations are run, and all if all of them run to completion.
 
@@ -197,7 +197,7 @@ The \code{thinning} argument specifies the number of steps to be skipped in orde
 
 The \code{updateJumps} argument specifies wether to run a simulation to find appropriate jump standard deviations for theta and gamma parameters. If argument \dQuote{\code{nsim}} is set to 1, then the simulation runs with the update jumps routine active. If \dQuote{\code{nsim}} is larger than 1, then an initial simulation is ran to find apropriate jumps before the main analysis is ran. 
 
-\code{5) ADDITIONAL ARGUMENTS:}
+\bold{5) ADDITIONAL ARGUMENTS}
 
 Additional arguments for priors, jumps and start values can be passed on the \dots section. For instance, argument \code{thetaStart} can be specified as a vector defining the initial values for each parameter in the survival model. If this argument is not specified, a set of random parameters is generated for each simulation. Similarly, argument \code{gammaStart} can be specified for all parameters in the proportional hazards section of the model. Jump standard deviations (i.e. the standard error in the Metropolis step) can be specified with arguments \code{thetaJumps} and \code{gammaJumps}. As with \code{thetaStart}, default values are assigned if these arguments are not specified. 
 
@@ -209,7 +209,8 @@ As described above, the number of parameters for \code{gammaStart}, \code{gammaJ
 
 %Another additional argument is \code{returnAges}, which outputs a value \code{estAges}, which is a matrix with all estimated ages after the burnin and thinning. This matrix also includes ages that were known, thus each row corresponds to the individual in the same row as the original dataset.
 
-\bold{6) SUMMARY STATISTICS:}
+\bold{6) SUMMARY STATISTICS}
+
 From the converged sequence of mortality parameters, BaSTA calculates a number of summary statistics, their standard errors and their lower and upper 95\% credible intervals. 
 
 \code{6.1) Remaining life expectancy:}
