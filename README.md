@@ -1,8 +1,8 @@
-# BaSTA 2.0.1: Bayesian Survival Trajectory Analysis.
+# BaSTA 2.0.3: Bayesian Survival Trajectory Analysis.
 
 BaSTA is an R package for parametric Bayesian estimation of age-specific survival and mortality for left-truncated and right-censored data.
 
-## What's new in version 2.0.1?
+## What's new in version 2.0.3?
 
 This is the next installment of the R package BaSTA, with several new and improved features, which include:  
 
