@@ -14,8 +14,8 @@ This is the next installment of the R package BaSTA, with several new and improv
 - Allows to produce `fancy` plots as in version 1.9.5;
 - Includes function `multibasta()` to test multiple mortality functions.
 
-## How to install BaSTA version 2.0.1?
-BaSTA version 2.0.1 is now available in CRAN. To install it from CRAN, simply type to the console
+## How to install BaSTA version 2.0.2?
+BaSTA version 2.0.2 is now available in CRAN. To install it from CRAN, simply type to the console
 ```R
 install.packages("BaSTA")
 ```
