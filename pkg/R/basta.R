@@ -4456,7 +4456,10 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
         catname <- nga
       }
       if (is.matrix(fullm$th)) {
-        thm <- fullm$th[, grep(nta, colnames(fullm$th))]
+        # 2025-27-06 Bug reported by Taylor Evans.
+        thname <- sprintf("%s.%s", defTheta$name, nta)
+        thm <- fullm$th[, thname] 
+        # end of bug fix.
       } else {
         thm <- matrix(fullm$th, ncol = 1)
       }
