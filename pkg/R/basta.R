@@ -4456,8 +4456,13 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
         catname <- nga
       }
       if (is.matrix(fullm$th)) {
-        # 2025-27-06 Bug reported by Taylor Evans.
-        thname <- sprintf("%s.%s", defTheta$name, nta)
+        # 2025-27-06 Bug reported by Taylor Evans 
+        # 2025-08-13 derived bug reported by Niels Mogensen.
+        if (nta == "") {
+          thname <- defTheta$name
+        } else {
+          thname <- sprintf("%s.%s", defTheta$name, nta)
+        }
         thm <- fullm$th[, thname] 
         # end of bug fix.
       } else {
