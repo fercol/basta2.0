@@ -762,9 +762,6 @@ basta.default <- function(object, dataType = "CMR",
                           niter = 22000, burnin = 2001, thinning = 40, 
                           nsim = 1, parallel = FALSE, ncpus = 2, 
                           updateJumps = TRUE, negSenescence = FALSE, ...) {
-  # Create BaSTA environment:
-  # bastaenv <- new.env()
-  
   # Additional arguments:
   argList <- list(...)
   
@@ -2384,7 +2381,13 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
     priorSd <- c(5, 1) # 2023-02-18
     nameTh <- c("b0", "b1")
     lowTh <- c(-Inf, 0)
-    if (algObj$negSenescence) lowTh[2] <- -Inf
+    # ==== EDIT 2026-09-23 ==== #
+    # Forced that negative senescence can only
+    # be tested for Gompertz-Makeham model
+    if (algObj$negSenescence & algObj$shape == "Makeham") {
+      lowTh[2] <- -Inf
+    }
+    # ==== END OF EDIT ==== #
     jitter <- c(0.5, 0.2) 
     if (algObj$shape == "bathtub") {
       lowTh <- c(-Inf, 0)
