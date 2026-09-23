@@ -27,7 +27,7 @@ basta(object, \dots)
 
 	\item{dataType }{A \code{character string} indicating if the data are for capture-mark-recapture (CMR) or census. Options are \dQuote{\code{CMR}} (default) or \dQuote{\code{census}}.}
 
-	\item{model }{The underlying mortality model to be used. \code{"EX"} = exponential,\code{"GO"} = Gompertz, \code{"WE"} = Weibull and \code{"LO"} = logistic (see \code{details}).}
+	\item{model }{The underlying mortality model to be used. \code{"EX"} = exponential,\code{"GO"} = Gompertz, \code{"WE"} = Weibull, \code{"LO"} = logistic, and \code{"GG"} = Gavrilov-Gavrilova (see \code{details}).}
 
 	\item{shape }{The overall shape of the model. Values are: \code{simple} = no extra parameters added; \code{Makeham} = a constant parameter is added to the mortality; and \code{bathtub} = a Gompertz declining mortality for early ages and a constant parameter are added to the mortality model (see \code{details}).}
 
@@ -121,12 +121,21 @@ where \eqn{b_0, b_1 > 0}, with survival
 S_b(x | \bm{\theta}) = \exp\left[-(b_1 x)^{b_0}\right].
 }
 
-(d) \code{model = }\dQuote{\code{LO}}: The logistic mortality model (Pletcher 1999), calculated as 
+(d) \code{model = "LO"}: The logistic mortality model (Pletcher 1999), calculated as 
 
 \deqn{\mu_b(x | \bm{\theta}) = \frac{\exp(b_0 + b_1 x)}{1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x}-1\right)},}
 where \eqn{b_0, b_1, b_2 > 0}, with survival
 \deqn{
 S_b(x | \bm{\theta}) = \left[1 + b_2 \frac{e^{b_0}}{b_1} \left(e^{b_1 x} - 1\right)\right]^{-1 / b_2}.
+}
+
+(e) \code{model = "GG"}: The reliability mortality model proposed by Gavrilov and Gavrilova (2001), calculated as 
+\deqn{
+\mu_b(x | \bm{\theta}) = \frac{b_2 b_1 b_0 e^{-b_0 x} (1 - e^{-b_0 x})^{b_1 - 1}}{1 - (1 - e^{-b_0 x})^{b_1}},
+}
+where \eqn{b_0, b_1, b_2 > 0}, with survival
+\deqn{
+S_b(x | \bm{\theta}) = \left[1 - (1 - e^{-b_0 x})^{b_1}\right]^{b_2}.
 }
 
 \code{2.2)}\code{Argument }\dQuote{\code{shape}}\code{:}
