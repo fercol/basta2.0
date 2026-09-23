@@ -2,8 +2,8 @@
 # Functions to analyse mortality from capture-mark-recapture (CMR)
 # or from census data 
 # Name:        basta.R
-# Date:        2022-10-05
-# Version:     2.0
+# Date:        2026-01-29
+# Version:     2.0.3
 # Created by:  Fernando Colchero
 # Modified by: Fernando Colchero
 
@@ -15,6 +15,8 @@
 # - Allow the CMR part of the package to have Min. and Max. Birth dates
 # - Allow the CMR part to have times of censoring before the end of the 
 #   study.
+# - Added the Gavrilov and Gavrilova (2001) reliability model (b0 = b, 
+#   b1 = m, b2 = n).
 
 # List of names to change:
 # ------------------------ #
@@ -905,11 +907,6 @@ basta.default <- function(object, dataType = "CMR",
     if (parallel) {
       sfInit(parallel = TRUE, cpus = ncpus)
       sfExport(list = c(intVars, ".Random.seed"))
-      # if (Sys.info()[4] == "ADM-130757-Mac") {
-      #   sfSource(file = "/Users/colchero/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
-      # } else {
-      #   sfSource(file = "/Users/fernando/FERNANDO/PROJECTS/4.PACKAGES/BaSTA2.0/tests/sourceBaSTA.R")
-      # }
       sfLibrary("BaSTA", character.only = TRUE,
       warn.conflicts = FALSE)
       bastaOut <- sfClusterApplyLB(1:nsim, .RunMCMC, UpdJumps = FALSE, 
@@ -1744,16 +1741,16 @@ multibasta <- function(object, dataType = "CMR", models,
   
   # Models available:
   mods <- rbind(data.frame(model = "EX", shape = "simple"),
-                expand.grid(model = c("GO", "WE", "LO"), 
+                expand.grid(model = c("GO", "WE", "LO", "GG"), 
                             shape = c("simple", "Makeham", "bathtub")))
   
   # Abreviations for models and shapes:
   modsAbr <- rbind(data.frame(model = "Ex", shape = "Si"),
-                   expand.grid(model = c("Go", "We", "Lo"), 
+                   expand.grid(model = c("Go", "We", "Lo", "Gg"), 
                                shape = c("Si", "Ma", "Bt")))
   
   # Alternative is models and shape are missing (i.e. run all):
-  if (missing(models)) models <- c("EX", "GO", "WE", "LO")
+  if (missing(models)) models <- c("EX", "GO", "WE", "LO", "GG")
   if (missing(shapes)) shapes <- c("simple", "Makeham", "bathtub")
   
   # Models request by user:
@@ -2410,6 +2407,15 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
     nameTh <- c("b0", "b1", "b2")
     lowTh <- c(-Inf, 0, 0)
     jitter <- c(0.5, 0.2, 0.5) 
+  } else if (algObj$model == "GG") {
+    nTh <- 3 
+    startTh <- c(0.1, 10, 10) 
+    jumpTh <- c(0.01, 0.1, 0.1) 
+    priorMean <- c(0.5, 20, 20)
+    priorSd <- c(1, 10, 10)
+    nameTh <- c("b0", "b1", "b2")
+    lowTh <- c(0, 1, 1)
+    jitter <- c(0.2, 5, 5) 
   }
   if (algObj$shape == "Makeham") {
     nTh <- nTh + 1 
@@ -2770,6 +2776,30 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
              theta[, "b1"] * (exp(theta[, "b1"] * x) - 1))
       }
     }
+  } else if (algObj$model == "GG") {
+    if (algObj$shape == "simple") {
+      mortfun <- function(theta, x) {
+        theta[, "b2"] * theta[, "b0"] * theta[, "b1"] * 
+          exp(- theta[, "b0"] * x) * 
+          (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"] - 1) / 
+          (1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))
+      }
+    } else if (algObj$shape == "Makeham") {
+      mortfun <- function(theta, x) {
+        theta[, "c"] + theta[, "b2"] * theta[, "b0"] * theta[, "b1"] * 
+          exp(- theta[, "b0"] * x) * 
+          (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"] - 1) / 
+          (1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))
+      }
+    } else {
+      mortfun <- function(theta, x) {
+        exp(theta[, "a0"] - theta[, "a1"] * x) + theta[, "c"] + 
+          theta[, "b2"] * theta[, "b0"] * theta[, "b1"] * 
+          exp(- theta[, "b0"] * x) * 
+          (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"] - 1) / 
+          (1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))
+      }
+    }
   }
   return(mortfun)
 }
@@ -2845,6 +2875,29 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
              theta["b1"] * (exp(theta["b1"] * x) - 1))
       }
     }
+  } else if (algObj$model == "GG") {
+    if (algObj$shape == "simple") {
+      mortfun <- function(theta, x) {
+        theta["b2"] * theta["b0"] * theta["b1"] * exp(- theta["b0"] * x) * 
+          (1 - exp(- theta["b0"] * x))^(theta["b1"] - 1) / 
+          (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))
+      }
+    } else if (algObj$shape == "Makeham") {
+      mortfun <- function(theta, x) {
+        theta["c"] + theta["b2"] * theta["b0"] * theta["b1"] * 
+          exp(- theta["b0"] * x) * 
+          (1 - exp(- theta["b0"] * x))^(theta["b1"] - 1) / 
+          (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))
+      }
+    } else {
+      mortfun <- function(theta, x) {
+        exp(theta["a0"] - theta["a1"] * x) + theta["c"] + 
+          theta["b2"] * theta["b0"] * theta["b1"] * 
+          exp(- theta["b0"] * x) * 
+          (1 - exp(- theta["b0"] * x))^(theta["b1"] - 1) / 
+          (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))
+      }
+    }
   }
   return(mortfun)
 }
@@ -2906,6 +2959,23 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
                                    exp(theta[, "b0"]) / theta[, "b1"] * 
                                    (exp(theta[, "b1"] * x) - 1)) *
           (1 / theta[, "b2"])
+      }
+    }
+  } else if (algObj$model == "GG") {
+    if (algObj$shape == "simple") {
+      cumhazfun <- function(theta, x) {
+        - theta[, "b2"] * log(1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))
+      }
+    } else if (algObj$shape == "Makeham") {
+      cumhazfun <- function(theta, x) {
+        theta[, "c"] * x - theta[, "b2"] * 
+          log(1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))
+      }
+    } else {
+      cumhazfun <- function(theta, x) {
+        exp(theta[, "a0"]) / theta[, "a1"] * (1 - exp(-theta[, "a1"] * x)) +
+          theta[, "c"] * x - theta[, "b2"] * 
+          log(1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))
       }
     }
   }
@@ -2970,6 +3040,23 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
           (1 / theta["b2"])
       }
     }
+  } else if (algObj$model == "GG") {
+    if (algObj$shape == "simple") {
+      cumhazfun <- function(theta, x) {
+        - theta["b2"] * log(1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))
+      }
+    } else if (algObj$shape == "Makeham") {
+      cumhazfun <- function(theta, x) {
+        theta["c"] * x - theta["b2"] * 
+          log(1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))
+      }
+    } else {
+      cumhazfun <- function(theta, x) {
+        exp(theta["a0"]) / theta["a1"] * (1 - exp(-theta["a1"] * x)) +
+          theta["c"] * x - theta["b2"] * 
+          log(1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))
+      }
+    }
   }
   return(cumhazfun)
 }
@@ -3030,6 +3117,23 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
                                      (exp(theta[, "b1"] * x) - 1))^(-1 / theta[, "b2"])
       }
     }
+  } else if (algObj$model == "GG") {
+    if (algObj$shape == "simple") {
+      survfun <- function(theta, x) {
+        (1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))^theta[, "b2"]
+      }
+    } else if (algObj$shape == "Makeham") {
+      survfun <- function(theta, x) {
+        exp(-theta[, "c"] * x) * 
+          (1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))^theta[, "b2"]
+      }
+    } else {
+      survfun <- function(theta, x) {
+        exp(exp(theta[, "a0"]) / theta[, "a1"] * (exp(-theta[, "a1"] * x) - 1) -
+              theta[, "c"] * x) * 
+          (1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))^theta[, "b2"]
+      }
+    }
   }
   return(survfun)
 }
@@ -3087,6 +3191,23 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
               theta["c"] * x) * (1 + theta["b2"] * 
                                    exp(theta["b0"]) / theta["b1"] * 
                                    (exp(theta["b1"] * x) - 1))^(-1 / theta["b2"])
+      }
+    }
+  } else if (algObj$model == "GG") {
+    if (algObj$shape == "simple") {
+      survfun <- function(theta, x) {
+        (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))^theta["b2"]
+      }
+    } else if (algObj$shape == "Makeham") {
+      survfun <- function(theta, x) {
+        exp(-theta[, "c"] * x) * 
+          (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))^theta["b2"]
+      }
+    } else {
+      survfun <- function(theta, x) {
+        exp(exp(theta["a0"]) / theta["a1"] * (exp(-theta["a1"] * x) - 1) -
+              theta["c"] * x) * 
+          (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))^theta["b2"]
       }
     }
   }
