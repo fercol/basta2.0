@@ -878,7 +878,7 @@ basta.default <- function(object, dataType = "CMR",
   # ----------------------- #
   # Run MCMC to find jumps:
   # ----------------------- #
-  message("Running sequence to find jump SDs... ")
+  message("Running sequence to find jump SDs... ", appendLF = FALSE)
   Start <- Sys.time()
   jumpRun <- .RunMCMC(1, UpdJumps = TRUE, parJumps = NA, ageObj, dataObj,
                       parObj, fullParObj, covObj, 
@@ -4373,7 +4373,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric) {
-  message("Calculating summary statistics...")
+  message("Calculating summary statistics...", appendLF = FALSE)
   nthin <- outidObj$nKeep
   parMat <- bastaOut[[1]]$theta[outidObj$idKeep, ]
   # if (inherits(parMat, "numeric")) {
@@ -4960,7 +4960,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
 # --------------------- #
 # Function to calculate life table output:
 .CalcLifeTable <- function(bastaFinal, covObj, algObj, dataObj) {
-  message("Constructing life table... ")
+  message("Constructing life table... ", appendLF = FALSE)
   
   # Age at death or last obs:
   ageLastQuan <- bastaFinal$ageLast
