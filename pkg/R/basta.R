@@ -133,9 +133,9 @@ DataCheck <- function(object, dataType = "CMR", studyStart = NULL,
     }
     if (!silent) {
       if (stopExec) {
-        cat("Problems were detected with the data\nYou can use function FixCMRdata() to resolve issues.\n\n")
+        warning("problems were detected with the data, use function FixCMRdata() to resolve issues")
       } else {
-        cat("No problems were detected with the data.\n\n")
+        message("No problems were detected with the data.")
       }
     }
     
@@ -288,7 +288,7 @@ DataCheck <- function(object, dataType = "CMR", studyStart = NULL,
     # Output:
     class(prbList) <- "bastaCheckCens"
   } else {
-    stop("Wrong 'dataType' specified. Options are 'CMR' and 'census'.")
+    stop("wrong 'dataType' specified, options are 'CMR' and 'census'")
   }
   return(prbList)
 }
@@ -770,8 +770,7 @@ basta.default <- function(object, dataType = "CMR",
   # dcheck <- DataCheck(object, silent = TRUE)
   dcheck <- list(stopExec = FALSE)
   if (dcheck$stopExec) {
-    stop("\nProblems detected with the data.\n", 
-         "Use DataCheck() to find problems.", call. = FALSE)
+    stop("problems detected with the data, use function DataCheck() to find problems", call. = FALSE)
   }
   
   # Variables to pass to all cpus:
@@ -879,7 +878,7 @@ basta.default <- function(object, dataType = "CMR",
   # ----------------------- #
   # Run MCMC to find jumps:
   # ----------------------- #
-  cat("\nRunning sequence to find jump SDs... ")
+  message("Running sequence to find jump SDs... ")
   Start <- Sys.time()
   jumpRun <- .RunMCMC(1, UpdJumps = TRUE, parJumps = NA, ageObj, dataObj,
                       parObj, fullParObj, covObj, 
@@ -890,7 +889,7 @@ basta.default <- function(object, dataType = "CMR",
                       .CalcCumHaz, .CalcCumHaz.numeric, 
                       .CalcCumHaz.matrix, .JitterPars)
   End <- Sys.time()
-  cat("Done\n")
+  message(" Done.")
   compTime <- round(as.numeric(End-Start, units = units(End - Start)), 2)
   cat(sprintf("Total jump SDs computing time: %.2f %s.\n\n", compTime, 
               units(End - Start)))
@@ -901,7 +900,7 @@ basta.default <- function(object, dataType = "CMR",
   # -------------- #
   Start <- Sys.time()
   if (nsim > 1) {
-    cat("Multiple simulations started...\n\n") 
+    message("Multiple simulations started...") 
     if (parallel) {
       sfInit(parallel = TRUE, cpus = ncpus)
       sfExport(list = c(intVars, ".Random.seed"))
@@ -928,7 +927,7 @@ basta.default <- function(object, dataType = "CMR",
                          .CalcCumHaz.matrix, .JitterPars)
     }
   } else {
-    cat("Simulation started...\n\n")
+    message("Simulation started...")
     bastaOut <- lapply(1:nsim, .RunMCMC, UpdJumps = FALSE, 
                        parJumps = jumpRun$jumps, ageObj, dataObj, parObj, 
                        fullParObj, covObj, priorAgeObj, algObj, outidObj,
@@ -938,7 +937,7 @@ basta.default <- function(object, dataType = "CMR",
                        .CalcCumHaz.matrix, .JitterPars)
   }
   End <- Sys.time()
-  cat("Simulations finished.\n")
+  message("Simulations finished.")
   compTime <- round(as.numeric(End-Start, units = units(End - Start)), 2)
   cat(sprintf("Total MCMC computing time: %.2f %s.\n\n", compTime, 
               units(End - Start)))
@@ -969,13 +968,28 @@ basta.default <- function(object, dataType = "CMR",
   names(bastaFinal$settings) <- c("niter", "burnin", "thinning", "nsim")
   
   # Model specifications:
-  bastaFinal$modelSpecs <- 
-    c(model, shape, minAge, covarsStruct,
-      paste(names(covObj$cat), collapse = ", "), 
-      paste(names(covObj$cont), collapse = ", "), dataType)
-  names(bastaFinal$modelSpecs) <- c("model", "shape", "min. age", 
-                                    "Covar. structure", "Categorical", 
-                                    "Continuous", "DataType")
+  # bastaFinal$modelSpecs <- 
+  #   c(model, shape, minAge, covarsStruct,
+  #     paste(names(covObj$cat), collapse = ", "), 
+  #     paste(names(covObj$cont), collapse = ", "), randEffs, dataType)
+  modelSpecs <- 
+    c(model, shape, minAge, covarsStruct, "None", "None", "None",
+      dataType)
+  names(modelSpecs) <- c("model", "shape", "min. age", 
+                         "Covar. structure", "Categorical", 
+                         "Continuous", "Random eff.", "DataType")
+  
+  if (covObj$types["cat"]) {
+    modelSpecs["Categorical"] <- paste(names(covObj$cat), collapse = ", ")
+  }
+  if (covObj$types["cont"]) {
+    modelSpecs["Continuous"] <- paste(names(covObj$cont), collapse = ", ")
+  }
+  if (covObj$types["re"]) {
+    modelSpecs["Random eff."] <- paste(covObj$randEffs$renames, collapse = ", ")
+  }
+  bastaFinal$modelSpecs <- modelSpecs
+  
   # Life table:
   bastaFinal$lifeTable <- .CalcLifeTable(bastaFinal, covObj, algObj,
                                          dataObj)
@@ -1017,7 +1031,10 @@ plot.basta <- function(x, type = "traces", trace.name = "theta",
   
   # Wrong type:
   if (!type %in% c("traces", "densities", "demorates", "gof", "fancy")) {
-    stop("Wrong value for argument 'type'.\nAlternatives are 'traces', 'demorates', 'densities', 'gof', or 'fancy'.")
+    plTypes <- paste(dQuote(c("traces", "demorates", "densities", "gof", 
+                              "fancy")), collapse = ", ")
+    stop(gettextf("wrong value for argument 'type', alternatives are %s", 
+                  plTypes))
   }
   
   nv <- ifelse(type == "traces", x$settings['nsim'], length(x$surv))
@@ -1053,7 +1070,7 @@ plot.basta <- function(x, type = "traces", trace.name = "theta",
     
     if ("names.legend" %in% namesArgs) {
       if (length(args$names.legend) != nv) {
-        stop(sprintf("Wrong length in 'names.legend'. Correct length is %s elements.",
+        stop(gettextf("wrong length in 'names.legend', the correct length is %s elements",
                      nv), call. = FALSE)
       } else {
         legNames <- args$names.legend
@@ -1091,7 +1108,7 @@ plot.basta <- function(x, type = "traces", trace.name = "theta",
       } else if (trace.name == "gamma") {
         idpars <- grep("gamma", colnames(x$params))
         if (inherits(x$fullpar, "theta")) {
-          stop("'gamma' parameters not calculated (not propHaz).", 
+          stop("'gamma' parameters not calculated (not propHaz)", 
                call. = FALSE)
         } else {
           npar <- x$fullpar$gamma$len
@@ -1100,7 +1117,7 @@ plot.basta <- function(x, type = "traces", trace.name = "theta",
         }
       } else if (trace.name == "lambda") {
         if (inherits(x$fullpar, "noLambda")) {
-          stop("'lambda' parameters not calculated (no minAge).", 
+          stop("'lambda' parameters not calculated (no minAge)", 
                call. = FALSE)
         } else {
           pcol <- 1
@@ -1115,13 +1132,15 @@ plot.basta <- function(x, type = "traces", trace.name = "theta",
           npar <- x$fullpar$pi$len
           idpars <- grep("pi", colnames(x$params))
         } else {
-          stop("Argument 'trace.name' cannot be 'pi'.\n", 
-               "No recapture probabilities estimated, dataType is not CMR.",
+          stop(gettextf("argument 'trace.name' cannot be %s, dataType is not %s",
+                        dQuote("pi"), dQuote("CMR")),
                call. = FALSE)
         }
       } else {
-        stop("Wrong 'trace.name' specified.\n", 
-             "Names are 'theta', 'gamma', 'lambda', or 'pi'", call. = FALSE)
+        trNames <- paste(dQuote(c('theta', 'gamma', 'lambda', 'pi')), 
+                         collapse = ", ")
+        stop(gettextf("wrong 'trace.name' specified, alternatives are %s", trNames), 
+             call. = FALSE)
       }
       par (mfrow = c(prow, pcol), mar = c(4, 4, 1, 1))
       for (pp in 1:npar) {
@@ -1205,13 +1224,16 @@ plot.basta <- function(x, type = "traces", trace.name = "theta",
           prow <- ceiling(npar / pcol)
           allnpar <- x$fullpar$pi$len
         } else {
-          stop("Argument 'trace.name' cannot be 'pi'.\n", 
-               "No recapture probabilities estimated, dataType is not CMR.",
+          stop(gettextf("argument 'trace.name' cannot be %s, dataType is not %s",
+                        dQuote("pi"), dQuote("CMR")),
                call. = FALSE)
         }
       } else {
-        stop("Wrong 'trace.name' specified.\n", 
-             "Names are 'theta', 'gamma', 'lambda', or 'pi'", call. = FALSE)
+        trNames <- paste(dQuote(c('theta', 'gamma', 'lambda', 'pi')), 
+                         collapse = ", ")
+        stop(gettextf("wrong 'trace.name' specified, alternatives are %s", 
+                      trNames), call. = FALSE)
+        
       }
       keep <- seq(1, x$setting["niter"], x$settings["thinning"])
       par (mfrow = c(prow, pcol), mar = c(4, 4, 1, 1))
@@ -1547,19 +1569,31 @@ print.basta <- function(x, ...) {
   if ("ModelSpecs" %in% names(x)) {
     x$modelSpecs <- x$ModelSpecs
   }
-  cat("\nCall:\n")
-  cat(paste("Model             \t\t: ", x$modelSpecs[1], "\n", sep = ""))
-  cat(paste("Shape             \t\t: ", x$modelSpecs[2], "\n", sep = ""))
-  cat(paste("Minimum age       \t\t: ", x$modelSpecs[3], "\n", sep = ""))
-  cat(paste("Covars. structure \t\t: ", x$modelSpecs[4], "\n", sep = ""))
-  cat(paste("Cat. covars.      \t\t: ", x$modelSpecs[5], "\n", sep = ""))
-  cat(paste("Cont. covars.     \t\t: ", x$modelSpecs[6], "\n", 
-            collapse = ""))
   
+  # Print model specs:
+  # Print model specs:
+  callDf <- data.frame(x$modelSpecs[1:7])
+  rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
+                        "Categ. covars.", "Cont. covars.", "Random effects")
+  colnames(callDf) <- NULL
+  cat("\nCall:")
+  print(callDf, right = FALSE)  
+  
+  # Coefficients:
   cat("\nCoefficients:\n")
   print.default(x$coefficients, digits, ...)
+  
+  # Random effects:
+  if (!is.na(x$randEffs[1])) {
+    cat("\nRandom Effects variances:\n")
+    print(x$randEffs$summary)
+  }
+  
+  # Convergence:
   cat("\nConvergence:\n")
   cat(x$convmessage)
+  
+  # DIC:
   if (is.na(x$DIC[1])){
     cat("\nDIC not calculated.")
   } else {
@@ -1569,104 +1603,119 @@ print.basta <- function(x, ...) {
 
 # Summary:
 summary.basta <- function(object, ...){
-    extraArgs       <- list(...)
-    if (length(extraArgs) > 0) {
-      if (!is.element('digits', names(extraArgs))){
-        digits <- 4
-      } else {
-        digits <- extraArgs$digits
-      }
-    } else {
+  # Extra arguments:
+  extraArgs <- list(...)
+  if (length(extraArgs) > 0) {
+    if (!is.element('digits', names(extraArgs))){
       digits <- 4
-    }
-    if ("ModelSpecs" %in% names(object)) {
-      object$modelSpecs <- object$ModelSpecs
-    }
-    if ("version" %in% names(object)) {
-      cat(sprintf("\nOutput from BaSTA version %s\n", object$version))
-    }
-    cat("\nCall:\n")
-    cat(paste("Model             \t\t: ", object$modelSpecs[1], "\n", sep = ""))
-    cat(paste("Shape             \t\t: ", object$modelSpecs[2], "\n", sep = ""))
-    cat(paste("Minimum age       \t\t: ", object$modelSpecs[3], "\n", sep = ""))
-    cat(paste("Covars. structure \t\t: ", object$modelSpecs[4], "\n", sep = ""))
-    cat(paste("Cat. covars.      \t\t: ", object$modelSpecs[5], "\n", sep = ""))
-    cat(paste("Cont. covars.     \t\t: ", object$modelSpecs[6], "\n", 
-              collapse = ""))
-    
-    cat("\nModel settings:\n")
-    print(object$set)
-    
-    
-    cat("\nMean Kullback-Leibler\ndiscrepancy calibration (KLDC):\n")
-    if (object$K[1] != "Not calculated") {
-      if ("qkl1" %in% names(object$K)) {
-        meanKLcalib  <- t((object$K$qkl1 + object$K$qkl2) / 2)
-      } else {
-        meanKLcalib  <- (object$K$q12 + object$K$q21) / 2
-      }
-      print.default(meanKLcalib, digits = digits)
     } else {
-      if (object$set['nsim'] == 1) {
-        cat("KLDC was not calculated due to insufficient number\n",
-            " of simulations to estimate convergence.\n")
-      } else {
-        cat("KLDC was not calculated due to lack of convergence,\n",
-            "or because covariates were not included in the model.\n")
-      }
+      digits <- extraArgs$digits
     }
-    
-    
-    cat("\nCoefficients:\n")
-    print.default(object$coefficients, digits = digits)
-    
-    cat("\nConvergence:\n")
-    if ("Convergence" %in% names(object)) {
-      object$convergence <- object$Convergence
-    }
-    if (is.null(object$convergence)) {
-      if (object$set['nsim'] == 1) {
-        message("\nConvergence calculations require more than one run.",
-            "\nTo estimate potential scale reduction run at least",
-            " two simulations.\n")
-      } else {
-        cat("\nWarning: Convergence not reached for some parameters",
-            " (i.e. 'PotScaleReduc' values larger than 1.1).",
-            "\nThese estimates should not be used for inference.\n")
-      }
-    } else {
-      if (all(object$convergence[, "Rhat"] < 1.1)) {
-        cat("Appropriate convergence reached for all parameters.\n")
-      } else {
-        cat("\nWarning: Convergence not reached for some parameters",
-            " (i.e. 'PotScaleReduc' values larger than 1.1).",
-            "\nThese estimates should not be used for inference.\n")
-      }
-    } 
-    cat("\nDIC:\n")
-    if (!is.na(object$DIC[1])){
-      cat(object$DIC["DIC"],"\n")
-      if ("Convergence" %in% names(object)) {
-        warning("Model fit in versions older than BaSTA 1.5 had a mistake in the",
-                "\ncalculation of DIC values. In case you are interested in\n",
-                "comparing the fit of different models, please try to run them\n",
-                "with BaSTA versions 1.5 or above.",
-                " We apologise for the inconvenience.", call. = FALSE)
-      }
-    } else {
-      if (object$set['nsim'] == 1) {
-        cat("DIC was not calculated due to insufficient number",
-            "of simulations to estimate convergence.\n")
-      } else {
-        cat("DIC was not calculated due to lack of convergence.\n")
-      }
-    }
-    ans <- c(list(coefficients = object$coef, DIC = object$DIC,
-                  KullbackLeibler = object$KullbackLeibler, 
-                  convergence = object$convergence,
-                  modelSpecs = object$modelSpecs, settings = object$set))
-    return(invisible(ans))
+  } else {
+    digits <- 4
   }
+  
+  # Model specifications:
+  if ("ModelSpecs" %in% names(object)) {
+    object$modelSpecs <- object$ModelSpecs
+  }
+  
+  # Version:
+  if ("version" %in% names(object)) {
+    cat(sprintf("\nOutput from BaSTA version %s\n", object$version))
+  }
+  
+  # Print model specs:
+  callDf <- data.frame(object$modelSpecs[1:7])
+  rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
+                        "Categ. covars.", "Cont. covars.", "Random effects")
+  colnames(callDf) <- NULL
+  cat("\nCall:")
+  print(callDf, right = FALSE)
+  
+  # Model settigns:
+  cat("\nModel settings:\n")
+  print(object$set)
+  
+  # Kullback-Leibler discrepancies:
+  cat("\nMean Kullback-Leibler\ndiscrepancy calibration (KLDC):\n")
+  if (object$K[1] != "Not calculated") {
+    if ("qkl1" %in% names(object$K)) {
+      meanKLcalib  <- t((object$K$qkl1 + object$K$qkl2) / 2)
+    } else {
+      meanKLcalib  <- (object$K$q12 + object$K$q21) / 2
+    }
+    print.default(meanKLcalib, digits = digits)
+  } else {
+    if (object$set['nsim'] == 1) {
+      cat("KLDC was not calculated due to insufficient number\n",
+          " of simulations to estimate convergence.\n")
+    } else {
+      cat("KLDC was not calculated due to lack of convergence,\n",
+          "or because covariates were not included in the model.\n")
+    }
+  }
+  
+  # Coefficients:
+  cat("\nCoefficients:\n")
+  print.default(object$coefficients, digits = digits)
+  
+  # Random effects:
+  if (!is.na(object$randEffs[1])) {
+    cat("\nRandom Effects variances:\n")
+    print(object$randEffs$summary, digits = digits)
+  }
+  
+  # Convergence:
+  cat("\nConvergence:\n")
+  if ("Convergence" %in% names(object)) {
+    object$convergence <- object$Convergence
+  }
+  if (is.null(object$convergence)) {
+    if (object$set['nsim'] == 1) {
+      message("\nConvergence calculations require more than one run.",
+              "\nTo estimate potential scale reduction run at least",
+              " two simulations.\n")
+    } else {
+      cat("\nWarning: Convergence not reached for some parameters",
+          " (i.e. 'PotScaleReduc' values larger than 1.1).",
+          "\nThese estimates should not be used for inference.\n")
+    }
+  } else {
+    if (all(object$convergence[, "Rhat"] < 1.1)) {
+      cat("Appropriate convergence reached for all parameters.\n")
+    } else {
+      cat("\nWarning: Convergence not reached for some parameters",
+          " (i.e. 'PotScaleReduc' values larger than 1.1).",
+          "\nThese estimates should not be used for inference.\n")
+    }
+  } 
+  
+  # DIC:
+  cat("\nDIC:\n")
+  if (!is.na(object$DIC[1])){
+    cat(object$DIC["DIC"],"\n")
+    if ("Convergence" %in% names(object)) {
+      warning("Model fit in versions older than BaSTA 1.5 had a mistake in the",
+              "\ncalculation of DIC values. In case you are interested in\n",
+              "comparing the fit of different models, please try to run them\n",
+              "with BaSTA versions 1.5 or above.",
+              " We apologise for the inconvenience.", call. = FALSE)
+    }
+  } else {
+    if (object$set['nsim'] == 1) {
+      cat("DIC was not calculated due to insufficient number",
+          "of simulations to estimate convergence.\n")
+    } else {
+      cat("DIC was not calculated due to lack of convergence.\n")
+    }
+  }
+  ans <- c(list(coefficients = object$coef, DIC = object$DIC,
+                KullbackLeibler = object$KullbackLeibler, 
+                convergence = object$convergence,
+                modelSpecs = object$modelSpecs, settings = object$set))
+  return(invisible(ans))
+}
 
 # A.4) construct capture-recapture matrix:
 # ---------------------------------------- #
@@ -1677,8 +1726,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
   } 
   if (is.numeric(d)) {
     if (length(which(round(d) != d)) > 0) {
-      stop("Please provide integer values or Date class ", 
-           "values for argument 'd'.", call. = FALSE)
+      stop(gettextf("provide integer values or %s class values for argument 'd'", dQuote("Date")), call. = FALSE)
     } else {
       int <- d
     }
@@ -1686,7 +1734,7 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
     if (is.character(d)) {
       d <- as.Date(d, format = dformat)
       if (length(which(is.na(d)))) {
-        stop("Wrong 'dformat' argument or wrong 'd' values.", 
+        stop("wrong 'dformat' argument or wrong 'd' values", 
              call. = FALSE)
       }
     }
@@ -1705,8 +1753,9 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
       }
     }
   } else {
-    stop("Wrong class for argument 'd'. Values\n", 
-         "need to be of class 'integer', 'character' or 'Date'.", 
+    dClass <- paste(dQuote(c('integer', 'character', 'Date')), collapse = ", ")
+    stop(gettextf("wrong class for argument 'd', values need to be of class %s", 
+                  dClass),
          call. = FALSE)
   }  
   
@@ -1859,7 +1908,8 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
     }
     nmod <- nmod[nmod <= length(object$runs)]
   } else {
-    stop("\nArgument 'showAll' should be logical or an integer.\n", 
+    stop(gettextf("argument 'showAll' should be %s or %s", dQuote("logical"), 
+                  dQuote("integer")), 
          call. = FALSE)
   }
   modNames <- names(object$runs)
@@ -2273,16 +2323,20 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
       covObj$phLen <- ncol(covObj$propHaz)
       covClass[1] <- "propHaz"
     }
+    hasTypes <- c(cat = FALSE, cont = FALSE, re = FALSE)
     if (!is.null(covType$cat) & !is.null(covType$cont)) {
       covClass[2] <- "bothCov"
       covObj$cat <- covType$cat
       covObj$cont <- covType$cont
+      hasTypes[c("cat", "cont")] <- TRUE
     } else if (!is.null(covType$cat)) {
       covClass[2] <- "cateCov"
       covObj$cat <- covType$cat
+      hasTypes["cat"] <- TRUE
     } else if (!is.null(covType$cont)) {
       covClass[2] <- "contCov"
       covObj$cont <- covType$cont
+      hasTypes["cont"] <- TRUE
     }
     
     # General covariate names:
@@ -2297,8 +2351,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   # ---------------------------- #
   if (!is.null(algObj$randEffs)) {
     if (any(!algObj$randEffs %in% colnames(object))) {
-      stop("\nThe randEffs specified are out of bounds.\n", 
-           "Verify they match the \"object\" column names.", call. = FALSE)
+      stop("values in 'randEffs' are out of bounds, verify they match the 'object' column names", call. = FALSE)
     } else {
       nre <- length(algObj$randEffs)
       ranEffList <- list(n = nre, renames = algObj$randEffs)
@@ -2322,11 +2375,15 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
       ranEffList$ntot <- length(ranEffList$reID)
       covClass[3] <- "randEffs"
       covObj$randEffs <- ranEffList
+      hasTypes["re"] <- TRUE
     }
   } else {
     covObj$randEffs <- NA
   }
   # ==== END OF EDIT ==== #
+  
+  # add the types:
+  covObj$types <- hasTypes
   
   # ------------------------------------- #
   # Covariates for recapture probability:
@@ -2520,15 +2577,13 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
               list(colnames(covObj$inMort), defTheta$name)
           }
         } else {
-          stop(paste("\nDimensions of theta ", statName[st], 
-                     " matrix are incorrect.\n",
-                     "Provide a single vector of length ", defTheta$length,
-                     "\nor a matrix of dimensions ", covObj$imLen ," times ", 
-                     defTheta$length, 
-                     ".\n(i.e. number of covariates times number", 
-                     " of\n parameters for model ", 
-                     algObj$model," with ", algObj$shape, " shape).", 
-                     sep = ""), call. = FALSE)
+          stMessage <- paste("the dimensions of theta ", statName[st], 
+                             " matrix are incorrect, ",
+                             "provide a single vector of length ", defTheta$length,
+                             " or a matrix of dimensions ", covObj$imLen ," 
+                             times ", defTheta$length, 
+                             sep = "")
+          stop(stMessage, call. = FALSE)
         }
       }
       allstatName <- paste(rep(defTheta$name, 
@@ -2546,11 +2601,10 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
             matrix(userPars$theta[[statName[st]]], 1, defTheta$length, 
                    dimnames = list(NULL, defTheta$name))
         } else {
-          stop(paste("\nLength of theta ", statName[st], " is incorrect.\n",
-                     "Provide a single vector of length ", defTheta$length,
-                     ".\n(i.e. number of parameters for model ", 
-                     algObj$model," with ", algObj$shape, " shape).", 
-                     sep = ""), call. = FALSE)
+          stMessage <- paste("length of 'theta' ", statName[st], " is incorrect, ",
+                             "provide a single vector of length ", defTheta$length,
+                             sep = "")
+          stop(stMessage, call. = FALSE)
         }
       }
       allstatName <- defTheta$name
@@ -2571,10 +2625,10 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
           fullParObj$gamma[[statName[st]]] <- userPars$gamma[[statName[st]]]
           names(fullParObj$gamma[[statName[st]]]) <- colnames(covObj$propHaz)
         } else {
-          stop(paste("\nLength of gamma parameters is incorrect.\n",
-                     "Provide a single vector of length ", covObj$phLen,
-                     ".\n(i.e. number of proportional hazards covariates).", 
-                     sep = ""), call. = FALSE)
+          stMessage <- paste("length of gamma parameters is incorrect, ",
+                             "provide a single vector of length ", covObj$phLen, 
+                             sep = "")
+          stop(stMessage, call. = FALSE)
         }
       }
     }
@@ -4319,7 +4373,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric) {
-  cat("Calculating summary statistics...")
+  message("Calculating summary statistics...")
   nthin <- outidObj$nKeep
   parMat <- bastaOut[[1]]$theta[outidObj$idKeep, ]
   # if (inherits(parMat, "numeric")) {
@@ -4361,6 +4415,8 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   # Random effects:
   if (inherits(covObj, "randEffs")) {
     reMat <- bastaOut[[1]]$re[outidObj$idKeep, ]
+  } else {
+    reMat <- NA
   }
   # ==== END OF EDIT ==== #
   for (sim in 1:nsim) {
@@ -4456,16 +4512,16 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
       convmessage <- "All parameters converged properly.\n"
     } else {
       modSel <- NA
-      convmessage <- "Convergence not reached for some parameters.\n"
+      convmessage <- "Convergence not reached for some parameters."
       conv <- NULL
     }
   } else {
     modSel <- NA
-    convmessage <- "Convergence not calculated due to\ninsuficcient number of simulations.\n"
+    convmessage <- "Convergence not calculated due to insuficcient number of simulations."
     conv <- NULL
   }
-  cat(" Done.\n")
-  cat(convmessage)
+  message(" Done.")
+  message(convmessage)
   # ===== EDIT 2026-09-24 ==== #
   # Random effects:
   if (inherits(covObj, "randEffs")) {
@@ -4540,23 +4596,23 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   xv <- seq(0, maxAge, by = Dx)
   
   # Mortality, survival, pdf, and pace-shape quantiles:
-  mortQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
-                               funtype = "mort", .CalcMort, 
+  mortQuan <- .CalcDemoFunQuan(parMat, reMat, idTheta, xv, covObj, covsNames,
+                               defTheta, funtype = "mort", .CalcMort, 
                                .CalcMort.numeric, .CalcMort.matrix, 
                                .CalcSurv, .CalcSurv.matrix, 
                                .CalcSurv.numeric)
-  survQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
-                               funtype = "surv", .CalcMort, 
+  survQuan <- .CalcDemoFunQuan(parMat, reMat, idTheta, xv, covObj, covsNames,
+                               defTheta, funtype = "surv", .CalcMort, 
                                .CalcMort.numeric, .CalcMort.matrix, 
                                .CalcSurv, .CalcSurv.matrix, 
                                .CalcSurv.numeric)
-  densQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
-                               funtype = "dens", .CalcMort, 
+  densQuan <- .CalcDemoFunQuan(parMat, reMat, idTheta, xv, covObj, covsNames,
+                               defTheta, funtype = "dens", .CalcMort, 
                                .CalcMort.numeric, .CalcMort.matrix, 
                                .CalcSurv, .CalcSurv.matrix, 
                                .CalcSurv.numeric)
-  PSQuan <- .CalcDemoFunQuan(parMat, idTheta, xv, covObj, covsNames, defTheta, 
-                             funtype = "PS", .CalcMort, 
+  PSQuan <- .CalcDemoFunQuan(parMat, reMat, idTheta, xv, covObj, covsNames,
+                             defTheta, funtype = "PS", .CalcMort, 
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric)
@@ -4661,8 +4717,8 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
 }
 
 # Calculate survival and mortality quantiles:
-.CalcDemoFunQuan <- function(parMat, idTheta, x, covObj, covsNames, defTheta, 
-                             funtype = "mort", .CalcMort, 
+.CalcDemoFunQuan <- function(parMat, reMat, idTheta, x, covObj, covsNames, 
+                             defTheta, funtype = "mort", .CalcMort, 
                              .CalcMort.numeric, .CalcMort.matrix, 
                              .CalcSurv, .CalcSurv.matrix, 
                              .CalcSurv.numeric) {
@@ -4680,10 +4736,13 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
     }
     fullm$ga$cat <- 0
     fullm$ga$con <- 0
+    fullm$ga$re <- 0 # 2026-10-09 Random effects
     covinf$ga$caname <- ""
     covinf$ga$coname <- ""
+    covinf$ga$rename <- "" # 2026-10-09 Random effects
     covinf$ga$canum <- 0
     covinf$ga$conum <- 0
+    covinf$ga$renum <- 0  # 2026-10-09 Random effects
   } else if (covsNames$class == "fused") {
     fullm$th <- parMat[, idTheta]
     covinf$th$num <- ifelse(length(covsNames$cat) == 0, 0, 
@@ -4704,6 +4763,10 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
       concol <- concol[-idlambda]
     }
     fullm$ga$con <- parMat[, concol]
+    fullm$ga$re <- 0 # 2026-10-09 Random effects
+    covinf$ga$rename <- "" # 2026-10-09 Random effects
+    covinf$ga$renum <- 0  # 2026-10-09 Random effects
+    
   } else {
     fullm$th <- parMat[, idTheta]
     covinf$th$num <- 0
@@ -4735,6 +4798,20 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
       covinf$ga$conum <- length(covsNames$con)
       fullm$ga$con <- parMat[, sprintf("gamma.%s", covinf$ga$coname)]
     }
+    
+    fullm$ga$re <- 0 # 2026-10-09 Random effects
+    covinf$ga$rename <- "" # 2026-10-09 Random effects
+    covinf$ga$renum <- 0  # 2026-10-09 Random effects
+    
+  }
+  # ==== 2026-10-09 Random effects edit: ==== #
+  if (covObj$types["re"]) {
+    fullm$ga$re <- sapply(1:nrow(reMat), function(ire) {
+      remu <- mean(covObj$randEffs$mat %*% reMat[ire, ])
+      return(remu)
+    })
+  } else {
+    fullm$ga$re <- 0
   }
   idlambda <- grep("lambda", colnames(parMat))
   # if (length(idlambda) == 1) {
@@ -4794,7 +4871,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
           gaco <- fullm$ga$con * mean(covObj$propHaz[, names(covObj$cont)])
         }
       }
-      gam <- gaca + gaco
+      gam <- gaca + gaco + fullm$ga$re
       if (length(gam) == 1) {
         gam <- rep(gam, nrow(thm))
       }
@@ -4883,7 +4960,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
 # --------------------- #
 # Function to calculate life table output:
 .CalcLifeTable <- function(bastaFinal, covObj, algObj, dataObj) {
-  cat("Constructing life table... ")
+  message("Constructing life table... ")
   
   # Age at death or last obs:
   ageLastQuan <- bastaFinal$ageLast
@@ -4960,7 +5037,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
     LT[[covar]]$Mean <- npSx$lt
     LT[[covar]]$ple <- npSx$ple
   }
-  cat("done.\n")
+  message(" Done.")
   return(LT)
 }
 
