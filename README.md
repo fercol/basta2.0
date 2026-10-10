@@ -7,9 +7,10 @@ BaSTA is an R package for parametric Bayesian estimation of age-specific surviva
 This is the next installment of the R package BaSTA, with several new and improved features, which include:  
 
 - Ability to analyze capture-mark-recapture (CMR) and census data;
+- Allows users to include random effects;
 - Improved life table estimation using product limit estimators on the mean estimated ages at death;
 - Plots for goodness of fit on survival and mortality;
-- Allows users to specify minimum and maximum birth and death to improve estimation;
+- Allows users to specify minimum and maximum birth and death to CMR data to improve estimation;
 - Includes summary statistics such as remaining life expectancy, lifespan inequality, lifespan equality;
 - Allows to produce `fancy` plots as in version 1.9.5;
 - Includes function `multibasta()` to test multiple mortality functions.
