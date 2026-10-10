@@ -8,6 +8,7 @@ This is the next installment of the R package BaSTA, with several new and improv
 
 - Ability to analyze capture-mark-recapture (CMR) and census data;
 - Allows users to include random effects;
+- Added the Gavrilov and Gavrilova reliability model (GG);
 - Improved life table estimation using product limit estimators on the mean estimated ages at death;
 - Plots for goodness of fit on survival and mortality;
 - Allows users to specify minimum and maximum birth and death to CMR data to improve estimation;
