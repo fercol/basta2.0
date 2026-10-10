@@ -17,9 +17,10 @@ basta(object, \dots)
 \method{basta}{default} (object, dataType = "CMR", model = "GO", 
   shape = "simple",  studyStart = NULL, studyEnd = NULL, 
   minAge = 0, covarsStruct = "fused",  formulaMort = NULL, 
-  formulaRecap = NULL, recaptTrans = studyStart,  niter = 22000, 
-  burnin = 2001, thinning = 40, nsim = 1, parallel = FALSE,  
-  ncpus = 2, updateJumps = TRUE, negSenescence = FALSE,  \dots)
+  randEffs = NULL, formulaRecap = NULL, recaptTrans = studyStart,  
+  niter = 22000, burnin = 2001, thinning = 40, nsim = 1, 
+  parallel = FALSE, ncpus = 2, updateJumps = TRUE, 
+  negSenescence = FALSE,  \dots)
 }
 
 \arguments{
@@ -31,7 +32,7 @@ basta(object, \dots)
 
 	\item{shape }{The overall shape of the model. Values are: \code{simple} = no extra parameters added; \code{Makeham} = a constant parameter is added to the mortality; and \code{bathtub} = a Gompertz declining mortality for early ages and a constant parameter are added to the mortality model (see \code{details}).}
 
-	\item{ studyStart }{Only required for \code{dataType =} \dQuote{\code{CMR}}, an integer indicating the first year of the study.}
+	\item{studyStart }{Only required for \code{dataType =} \dQuote{\code{CMR}}, an integer indicating the first year of the study.}
 
 	\item{studyEnd }{Only required for \code{dataType =} \dQuote{\code{CMR}}, an integer indicating the last year of the study.}
 
@@ -39,7 +40,9 @@ basta(object, \dots)
 
 	\item{covarsStruct }{Character string that indicates how covariates should be evaluated. The options are: \dQuote{\code{fused}}, which defines all categorical variables as covariates for each mortality parameter and all continuous covariates under a proportional hazards structure; \dQuote{\code{prop.haz}}, which puts all covariates under a proportional hazards structure; and \dQuote{\code{all.in.mort}} puts all covariates as a multilevel function of the mortality parameters (see \code{details}).}
 
-	\item{ formulaMort }{An object of class \code{\link{formula}} specifying the covariates to be included on the mortality part of the model. Note that the syntax should not include a dependent variable. If \code{formulaMort = NULL}, then no covariates are included in the analysis. See \code{details}.}
+	\item{formulaMort }{An object of class \code{\link{formula}} specifying the covariates to be included on the mortality part of the model. Note that the syntax should not include a dependent variable. If \code{formulaMort = NULL}, then no covariates are included in the analysis. See \code{details}.}
+
+	\item{randEffs }{A character string or vector indicating which columns should be used for random effects. Default is \code{NULL}.}
 
 	\item{formulaRecap }{\emph{Not yet implemented}, an object of class \code{\link{formula}} specifying the covariates to be included on the recapture part of the model. Note that the syntax should not include a dependent variable. If \code{formulaMort = NULL}, then no covariates are included in the analysis.}
 

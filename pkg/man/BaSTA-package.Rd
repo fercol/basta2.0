@@ -9,7 +9,7 @@
 }
 
 \description{
- This package estimates age-specific mortality and survival trajectories with covariates from capture-recapture/recovery or census data under a Bayesian framework when many individuals are of unknown age. It includes tools for data checking, model diagnostics, and outputs such as life-tables and plots.
+ This package estimates age-specific mortality and survival trajectories with covariates and random effects from capture-recapture/recovery or census data under a Bayesian framework when many individuals are of unknown age. It includes tools for data checking, model diagnostics, and outputs such as life-tables and plots.
 }
 
 \details{
@@ -17,7 +17,7 @@
 	Package: \tab BaSTA \cr
 	Type: \tab Package\cr
 	Version: \tab 2.0.3\cr
-	Date: \tab 2025-06-27\cr
+	Date: \tab 2026-10-01\cr
 	License: \tab GNU General Public Licence\cr
 	LazyLoad: \tab yes\cr
 }
