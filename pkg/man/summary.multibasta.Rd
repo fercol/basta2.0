@@ -52,8 +52,8 @@ data("bastaCMRdat", package = "BaSTA")
 ## Run short version of BaSTA on the data:
 multiout <- multibasta(bastaCMRdat, studyStart = 51, studyEnd = 70, 
                  models = c("GO", "WE"), shapes = "simple",
-                 niter = 100, burnin = 11, thinning = 10, 
-                 nsim = 1, updateJumps = FALSE, parallel = FALSE)
+                 niter = 200, burnin = 11, thinning = 1, 
+                 nsim = 2, parallel = FALSE)
 
 ## Print results:
 summary(multiout, digits = 3)

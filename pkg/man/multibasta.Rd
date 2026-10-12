@@ -1,5 +1,6 @@
 \name{multibasta}
 \alias{multibasta}
+\alias{multibasta.default}
 \title{
 Function to run multiple BaSTA models on the same dataset.
 }
@@ -8,8 +9,11 @@ Function to run multiple BaSTA models on the same dataset.
 These functions allow users to run models with different functional forms on the same dataset, to perform model comparison and to visualize the results of the multiple runs.}
 
 \usage{
-multibasta(object, dataType = "CMR", models, shapes, \dots)
+multibasta(object, \dots)
+
+\method{multibasta}{default} (object, dataType = "CMR", models, shapes, \dots)
 }
+
 
 \arguments{
   
@@ -271,8 +275,8 @@ data("bastaCMRdat", package = "BaSTA")
 ## Run short version of BaSTA on the data:
 multiout <- multibasta(bastaCMRdat, studyStart = 51, studyEnd = 70, 
                  models = c("GO", "WE"), shapes = "simple",
-                 niter = 100, burnin = 11, thinning = 10, 
-                 nsim = 1, updateJumps = FALSE, parallel = FALSE)
+                 niter = 200, burnin = 11, thinning = 1, 
+                 nsim = 2, parallel = FALSE)
 
 ## Print results:
 summary(multiout, digits = 3)

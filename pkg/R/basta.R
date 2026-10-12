@@ -968,10 +968,6 @@ basta.default <- function(object, dataType = "CMR",
   names(bastaFinal$settings) <- c("niter", "burnin", "thinning", "nsim")
   
   # Model specifications:
-  # bastaFinal$modelSpecs <- 
-  #   c(model, shape, minAge, covarsStruct,
-  #     paste(names(covObj$cat), collapse = ", "), 
-  #     paste(names(covObj$cont), collapse = ", "), randEffs, dataType)
   modelSpecs <- 
     c(model, shape, minAge, covarsStruct, "None", "None", "None",
       dataType)
@@ -1571,10 +1567,17 @@ print.basta <- function(x, ...) {
   }
   
   # Print model specs:
-  # Print model specs:
-  callDf <- data.frame(x$modelSpecs[1:7])
-  rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
-                        "Categ. covars.", "Cont. covars.", "Random effects")
+  if ("Random eff." %in% names(x$modelSpecs)) {
+    callDf <- data.frame(x$modelSpecs[1:7])
+    rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
+                          "Categ. covars.", "Cont. covars.", "Random effects")
+    
+  } else {
+    callDf <- data.frame(x$modelSpecs[1:6])
+    rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
+                          "Categ. covars.", "Cont. covars.")
+    
+  }
   colnames(callDf) <- NULL
   cat("\nCall:")
   print(callDf, right = FALSE)  
@@ -1584,9 +1587,11 @@ print.basta <- function(x, ...) {
   print.default(x$coefficients, digits, ...)
   
   # Random effects:
-  if (!is.na(x$randEffs[1])) {
-    cat("\nRandom Effects variances:\n")
-    print(x$randEffs$summary)
+  if ("Random eff." %in% names(x$modelSpecs)) {
+    if (x$modelSpecs["Random eff."] != "None") {
+      cat("\nRandom Effects variances:\n")
+      print(x$randEffs$summary)
+    }
   }
   
   # Convergence:
@@ -1626,9 +1631,17 @@ summary.basta <- function(object, ...){
   }
   
   # Print model specs:
-  callDf <- data.frame(object$modelSpecs[1:7])
-  rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
-                        "Categ. covars.", "Cont. covars.", "Random effects")
+  if ("Random eff." %in% names(object$modelSpecs)) {
+    callDf <- data.frame(object$modelSpecs[1:7])
+    rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
+                          "Categ. covars.", "Cont. covars.", "Random effects")
+    
+  } else {
+    callDf <- data.frame(object$modelSpecs[1:6])
+    rownames(callDf) <- c("Model", "Shape", "Minimum age", "Covars. structure", 
+                          "Categ. covars.", "Cont. covars.")
+    
+  }
   colnames(callDf) <- NULL
   cat("\nCall:")
   print(callDf, right = FALSE)
@@ -1661,9 +1674,11 @@ summary.basta <- function(object, ...){
   print.default(object$coefficients, digits = digits)
   
   # Random effects:
-  if (!is.na(object$randEffs[1])) {
-    cat("\nRandom Effects variances:\n")
-    print(object$randEffs$summary, digits = digits)
+  if ("Random eff." %in% names(object$modelSpecs)) {
+    if (object$modelSpecs["Random eff."] != "None") {
+      cat("\nRandom Effects variances:\n")
+      print(object$randEffs$summary, digits = digits)
+    }
   }
   
   # Convergence:
@@ -1780,8 +1795,10 @@ CensusToCaptHist <- function(ID, d, dformat = "%Y", timeInt = "Y") {
 # A.7) Multi-BaSTA functions:
 # --------------------------- #
 # Main multibasta:
-multibasta <- function(object, dataType = "CMR", models, 
-                       shapes, ...) {
+multibasta <- function(object, ...) UseMethod("multibasta")
+
+multibasta.default <- function(object, dataType = "CMR", models, 
+                               shapes, ...) {
   # Extract arguments:
   argList <- list(...)
   argNames <- names(argList)
@@ -1790,6 +1807,17 @@ multibasta <- function(object, dataType = "CMR", models,
   mods <- rbind(data.frame(model = "EX", shape = "simple"),
                 expand.grid(model = c("GO", "WE", "LO", "GG"), 
                             shape = c("simple", "Makeham", "bathtub")))
+  
+  # Errors:
+  if (any(!models %in% mods$model)) {
+    modelTypes <- paste(dQuote(unique(mods$model)), collapse = ", ")
+    stop(gettextf("wrong 'models' argument, options are %s", modelTypes))
+  }
+  
+  if (any(!shapes %in% mods$shape)) {
+    shapeTypes <- paste(dQuote(unique(mods$shape)), collapse = ", ")
+    stop(gettextf("wrong 'shapes' argument, options are %s", shapeTypes))
+  }
   
   # Abreviations for models and shapes:
   modsAbr <- rbind(data.frame(model = "Ex", shape = "Si"),
@@ -1806,7 +1834,7 @@ multibasta <- function(object, dataType = "CMR", models,
   modsAbr <- modsAbr[idIncl, ]
   nmod <- nrow(mods)
   modNames <- paste(modsAbr$model, modsAbr$shape, sep = ".")
-
+  
   # Define nsim:
   if (!"nsim" %in% argNames) {
     argList$nsim <- 2
@@ -1825,16 +1853,23 @@ multibasta <- function(object, dataType = "CMR", models,
   runList <- list()
   
   # Run models:
+  success <- rep(FALSE, nmod)
+  names(success) <- modNames
   for (mod in 1:nmod) {
     updt <- sprintf("Run number %s, model: %s", mod, modNames[mod])
     cat(paste("\n", paste(rep("-", nchar(updt)), collapse = ""), sep = ""))
     cat(sprintf("\n%s\n", updt))
     cat(paste(paste(rep("-", nchar(updt)), collapse = ""), "\n", sep = ""))
-    out <- basta(object, dataType = dataType, model = mods$model[mod], 
-                 shape = mods$shape[mod], ...)
-    runList[[modNames[mod]]] <- out
-    if (DIC & !is.na(out$DIC[1])) {
-      dics[mod, ] <- out$DIC
+    out <- try(basta(object, dataType = dataType, model = mods$model[mod], 
+                     shape = mods$shape[mod], ...))
+    if (inherits(out, "basta")) {
+      runList[[modNames[mod]]] <- out
+      if (DIC & !is.na(out$DIC[1])) {
+        dics[mod, ] <- out$DIC
+      }
+      success[mod] <- TRUE
+    } else {
+      runList[[modNames[mod]]] <- NA
     }
   }
   
@@ -1855,7 +1890,8 @@ multibasta <- function(object, dataType = "CMR", models,
   }
   
   # Results list:
-  results <- list(runs = runList[idModFit], DICs = modFit, models = mods)
+  results <- list(runs = runList[idModFit], DICs = modFit, models = mods,
+                  success = success)
   class(results) <- "multibasta"
   return(results)
 }
@@ -1876,16 +1912,24 @@ summary.multibasta <- function(object, ...) {
     cat(sprintf("\nBaSTA version %s\n", object$runs[[1]]$version))
   }
   
-  cat("\nCall:\n")
-  cat(paste("Covars. structure \t\t: ", object$runs[[1]]$modelSpecs[3], "\n", 
-            sep = ""))
-  cat(paste("Minimum age       \t\t: ", object$runs[[1]]$modelSpecs[4], "\n", 
-            sep = ""))
-  cat(paste("Cat. covars.      \t\t: ", object$runs[[1]]$modelSpecs[5], "\n", 
-            sep = ""))
-  cat(paste("Cont. covars.     \t\t: ", object$runs[[1]]$modelSpecs[6], "\n", 
-            collapse = ""))
+  # Print model specs:
+  obj1 <- object$runs[[1]]
+  if ("Random eff." %in% names(obj1$modelSpecs)) {
+    callDf <- data.frame(obj1$modelSpecs[3:7])
+    rownames(callDf) <- c("Minimum age", "Covars. structure", 
+                          "Categ. covars.", "Cont. covars.", "Random effects")
+    
+  } else {
+    callDf <- data.frame(obj1$modelSpecs[3:6])
+    rownames(callDf) <- c("Covars. structure", "Categ. covars.", 
+                          "Cont. covars.")
+    
+  }
+  colnames(callDf) <- NULL
+  cat("\nCall:")
+  print(callDf, right = FALSE)
   
+  # Settings:
   cat("\nModel settings:\n")
   print(object$runs[[1]]$set)
   
@@ -2270,6 +2314,9 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   covClass <- c("noCov", "noCovType", "noRandEffs", "noCovRecap")
   # Find if mortality covariates are not needed:
   # -------------------------------------------- #
+  # Logical for covariate types:
+  hasTypes <- c(cat = FALSE, cont = FALSE, re = FALSE)
+  
   if (is.null(algObj$formulaMort)) {
     covObj$covs <- NULL
   } else {
@@ -2323,7 +2370,6 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
       covObj$phLen <- ncol(covObj$propHaz)
       covClass[1] <- "propHaz"
     }
-    hasTypes <- c(cat = FALSE, cont = FALSE, re = FALSE)
     if (!is.null(covType$cat) & !is.null(covType$cont)) {
       covClass[2] <- "bothCov"
       covObj$cat <- covType$cat
@@ -2459,6 +2505,11 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
 
 # Set the default mortality parameters:
 .SetDefaultTheta  <- function(algObj) {
+  # Warning for negative senescence:
+  if (algObj$negSenescence & 
+      (algObj$model != "GO" | algObj$shape != "Makeham")) {
+    warning(gettextf("negative senescence can only be tested with model = %s and shape = %s", dQuote("GO"), dQuote("Makeham")))
+  }
   if (algObj$model == "EX") {
     nTh <- 1
     startTh <- 0.2 
@@ -2853,10 +2904,10 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   } else if (algObj$model == "WE") {
     if (algObj$shape == "simple") {
       mortfun <- function(theta, x) {
+        id0 <- which(x == 0)
+        if (length(id0) > 0) x[id0] <- max(x) * 1e-3
         mu <- theta[, "b0"] * theta[, "b1"]^theta[, "b0"] * 
           x^(theta[, "b0"] - 1)
-        id0 <- which(x == 0)
-        if (length(id0) > 0) mu[id0] <- min(mu[-id0])
         return(mu)
       }
     } else if (algObj$shape == "Makeham") {
@@ -2903,10 +2954,13 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   } else if (algObj$model == "GG") {
     if (algObj$shape == "simple") {
       mortfun <- function(theta, x) {
-        theta[, "b2"] * theta[, "b0"] * theta[, "b1"] * 
+        id0 <- which(x == 0)
+        if (length(id0) > 0) x[id0] <- max(x) * 1e-3
+        mu <- theta[, "b2"] * theta[, "b0"] * theta[, "b1"] * 
           exp(- theta[, "b0"] * x) * 
           (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"] - 1) / 
           (1 - (1 - exp(- theta[, "b0"] * x))^(theta[, "b1"]))
+        return(mu)
       }
     } else if (algObj$shape == "Makeham") {
       mortfun <- function(theta, x) {
@@ -2956,8 +3010,10 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   } else if (algObj$model == "WE") {
     if (algObj$shape == "simple") {
       mortfun <- function(theta, x) {
+        id0 <- which(x == 0)
+        if (length(id0) > 0) x[id0] <- max(x) * 1e-3
         mu <- theta["b0"] * theta["b1"]^theta["b0"] * 
-          (x + 0.003)^(theta["b0"] - 1)
+          x^(theta["b0"] - 1)
         return(mu)
       }
     } else if (algObj$shape == "Makeham") {
@@ -3002,9 +3058,12 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
   } else if (algObj$model == "GG") {
     if (algObj$shape == "simple") {
       mortfun <- function(theta, x) {
-        theta["b2"] * theta["b0"] * theta["b1"] * exp(- theta["b0"] * x) * 
+        id0 <- which(x == 0)
+        if (length(id0) > 0) x[id0] <- max(x) * 1e-3
+        mu <- theta["b2"] * theta["b0"] * theta["b1"] * exp(- theta["b0"] * x) * 
           (1 - exp(- theta["b0"] * x))^(theta["b1"] - 1) / 
           (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))
+        return(mu)
       }
     } else if (algObj$shape == "Makeham") {
       mortfun <- function(theta, x) {

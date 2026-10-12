@@ -17,7 +17,7 @@
 	Package: \tab BaSTA \cr
 	Type: \tab Package\cr
 	Version: \tab 2.0.3\cr
-	Date: \tab 2026-10-01\cr
+	Date: \tab 2026-10-12\cr
 	License: \tab GNU General Public Licence\cr
 	LazyLoad: \tab yes\cr
 }

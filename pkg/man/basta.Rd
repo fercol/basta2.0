@@ -199,7 +199,7 @@ where \eqn{\mu_0(x | \theta, Z_a)} represents the baseline mortality as defined 
 
 \code{3.3} \dQuote{\code{all.in.mort}}:
 
-This specification will put all covariates as linear functions of the survival parameters as explained above. Since most models require the lower bounds for the mortality parameters to be equal to 0, the only model that can be used for this test is Gompertz with \code{shape} set to \dQuote{\code{simple}}. In case these arguments are specified differently, a warning message is printed noting that \code{model} will be forced to be \dQuote{\code{GO}} and \code{shape} will be set to \dQuote{\code{simple}}.
+This specification will put all covariates as linear functions of the survival parameters as explained above. Since most models require the lower bounds for the mortality parameters to be equal to 0, the only model that can be used for this test is Gompertz with \code{shape} set to \dQuote{\code{Makeham}}. In case these arguments are specified differently, a warning message is printed noting that \code{model} will be forced to be \dQuote{\code{GO}} and \code{shape} will be set to \dQuote{\code{simple}}.
 
 \bold{4) MCMC SETTINGS}
 
