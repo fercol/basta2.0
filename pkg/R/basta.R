@@ -3383,7 +3383,7 @@ coef.multibasta <- function(object, showAll = FALSE, ...) {
       }
     } else if (algObj$shape == "Makeham") {
       survfun <- function(theta, x) {
-        exp(-theta[, "c"] * x) * 
+        exp(-theta["c"] * x) * 
           (1 - (1 - exp(- theta["b0"] * x))^(theta["b1"]))^theta["b2"]
       }
     } else {
